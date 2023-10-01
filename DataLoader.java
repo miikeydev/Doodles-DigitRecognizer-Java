@@ -9,62 +9,96 @@ import com.opencsv.exceptions.CsvValidationException;
 public class DataLoader {
 
     private String filePath;
-    private List<String[]> data;
+    private List<int[]> data;
 
-    /**
-     * Constructor for the DataLoader class.
-     * @param filePath - path to the CSV file to be loaded.
-     */
     public DataLoader(String filePath) {
         this.filePath = filePath;
     }
 
-    /**
-     * Loads data from the given CSV file.
-     * @return List of string arrays where each array represents a row from the CSV.
-     * @throws IOException if there's an error reading the file.
-     * @throws CsvValidationException if there's an error validating the CSV content.
-     */
-    public List<String[]> loadData() throws IOException, CsvValidationException {
+    public List<int[]> loadData() throws IOException, CsvValidationException {
         data = new ArrayList<>();
         try (CSVReader csvReader = new CSVReader(new FileReader(filePath))) {
             String[] nextRecord;
+
+            csvReader.readNext(); // Skip the header row
+
             while ((nextRecord = csvReader.readNext()) != null) {
-                data.add(nextRecord);
+                int[] intRow = new int[nextRecord.length];
+                for (int i = 0; i < nextRecord.length; i++) {
+                    intRow[i] = Integer.parseInt(nextRecord[i]);
+                }
+                data.add(intRow);
             }
         }
         return data;
     }
 
-    /**
-     * Retrieves the development data set (first 1000 rows).
-     * @return List of string arrays representing the development data.
-     */
-    public List<String[]> getDevData() {
+    public List<int[]> getDevData() {
         return data.subList(0, 1000);
     }
 
-    /**
-     * Retrieves the training data set (all rows excluding the first 1000).
-     * @return List of string arrays representing the training data.
-     */
-    public List<String[]> getTrainData() {
+    public List<int[]> getTrainData() {
         return data.subList(1000, data.size());
     }
 
+    public int[] getTrainLabels() {
+        List<int[]> trainDataList = getTrainData();
+        int[] labels = new int[trainDataList.size()];
+        for (int i = 0; i < trainDataList.size(); i++) {
+            labels[i] = trainDataList.get(i)[0];
+        }
+        return labels;
+    }
+
+    public int[] getDevLabels() {
+        List<int[]> devDataList = getDevData();
+        int[] labels = new int[devDataList.size()];
+        for (int i = 0; i < devDataList.size(); i++) {
+            labels[i] = devDataList.get(i)[0];
+        }
+        return labels;
+    }
+
+    private double[][] convertTo2DArray(List<int[]> dataList) {
+        double[][] dataArray = new double[dataList.size()][dataList.get(0).length - 1];
+        for (int i = 0; i < dataList.size(); i++) {
+            for (int j = 1; j < dataList.get(i).length; j++) {
+                dataArray[i][j-1] = dataList.get(i)[j] / 255.0;
+            }
+        }
+        return dataArray;
+    }
+
+    public double[][] getTrainDataArray() {
+        return convertTo2DArray(getTrainData());
+    }
+
+    public double[][] getDevDataArray() {
+        return convertTo2DArray(getDevData());
+    }
+
     public static void main(String[] args) {
+
         DataLoader dataLoader = new DataLoader("src/main/ressources/train.csv");
         try {
-            dataLoader.loadData(); // Load data from the CSV file.
-            List<String[]> trainData = dataLoader.getTrainData(); // Retrieve training data.
-            List<String[]> devData = dataLoader.getDevData(); // Retrieve development data.
+            dataLoader.loadData();
+            List<int[]> trainData = dataLoader.getTrainData();
+            // Get the first image's pixel values
+            int[] firstImage = trainData.get(0);
 
-            // Shuffle the training data to ensure randomness.
-            Collections.shuffle(trainData);
+            // Print the pixel values of the first image
+            for (int pixel : firstImage) {
+                System.out.print(pixel + " ");
+            }
 
-            // You can now proceed with further processing of the data.
+            List<int[]> devData = dataLoader.getDevData();
+            //Collections.shuffle(trainData);
+
         } catch (IOException | CsvValidationException e) {
             e.printStackTrace();
         }
+
+
+
     }
 }
