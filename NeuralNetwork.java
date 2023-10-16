@@ -1,402 +1,253 @@
-import java.util.Map;
-import java.util.HashMap;
-import java.io.IOException;
-import com.opencsv.exceptions.CsvValidationException;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 
+import java.awt.image.BufferedImage;
+import javax.swing.*;
+import java.awt.*;
+import java.util.Arrays;
 
 public class NeuralNetwork {
 
-    private int inputSize;
-    private int hiddenSize;
-    private int outputSize;
+    private INDArray W1, b1, W2, b2;
+    private double learningRate = 0.01;
+    private int numInputs = 784;
+    private int numHidden = 10;
+    private int numOutputs = 10;
 
-
-
-    public static void main(String[] args) {
-        // 1. Load and Preprocess Data
-        DataLoader dataLoader = new DataLoader("src/main/ressources/train.csv");
-        try {
-            dataLoader.loadData();  // Load data from the CSV file
-
-            double[][] X_train = dataLoader.getTrainDataArray();
-            X_train = transpose(X_train);
-
-            int[] Y_train = dataLoader.getTrainLabels();
-            double[][] X_dev = dataLoader.getDevDataArray();
-            int[] Y_dev = dataLoader.getDevLabels();
-
-
-            // Example usage:
-            NeuralNetwork nn = new NeuralNetwork(784, 10, 10);
-            double alpha = 0.01;  // Learning rate
-            int iterations = 1000;  // Number of iterations
-            nn.gradientDescent(X_train, Y_train, alpha, iterations);
-
-
-
-
-        } catch (IOException | CsvValidationException e) {
-            e.printStackTrace();
-        }
+    public NeuralNetwork() {
+        initParams();
     }
 
-// ---------------------------- Maths methods -------------------------------------
+    private void initParams() {
+        W1 = Nd4j.rand(numHidden, numInputs).subi(0.5);
+        b1 = Nd4j.rand(numHidden, 1).subi(0.5);
+        W2 = Nd4j.rand(numOutputs, numHidden).subi(0.5);
+        b2 = Nd4j.rand(numOutputs, 1).subi(0.5);
 
-    private double[][] generateRandomMatrix(int rows, int cols) {
-        double[][] matrix = new double[rows][cols];
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                matrix[i][j] = Math.random() - 0.01;
-            }
-        }
-        return matrix;
     }
 
-    private double[] generateRandomArray(int size) {
-        double[] array = new double[size];
-        for (int i = 0; i < size; i++) {
-            array[i] = Math.random() - 0.01;
+    private INDArray ReLU(INDArray Z) {
+
+        return Transforms.max(Z, 0);
+    }
+
+    private INDArray softmax(INDArray Z) {
+
+        return Transforms.exp(Z).div(Transforms.exp(Z).sum(0));
+    }
+
+    private INDArray ReLU_deriv(INDArray Z) {
+        return Z.gt(0);  // Element-wise check if Z > 0
+    }
+
+    private INDArray oneHot(INDArray Y) {
+        // Assuming Y is a column vector with integer values
+        INDArray oneHot = Nd4j.zeros(Y.length(), numOutputs);
+        for (int i = 0; i < Y.length(); i++) {
+            oneHot.putScalar(new int[]{i, Y.getInt(i)}, 1);
         }
-        return array;
+
+        return oneHot.transpose();
     }
 
 
-    public double[][] addMatrices(double[][] A, double[] B) {
-        int rows = A.length;
-        int cols = A[0].length;
+    public INDArray[] forwardProp(INDArray X) {
 
-        double[][] result = new double[rows][cols];
+        INDArray Z1 = W1.mmul(X).add(b1);
+        INDArray A1 = ReLU(Z1);
+        INDArray Z2 = W2.mmul(A1).add(b2);
+        INDArray A2 = softmax(Z2);
 
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                result[i][j] = A[i][j] + B[i];
-            }
-        }
-
-        return result;
+        return new INDArray[]{Z1, A1, Z2, A2};
     }
 
-    public double[][] matrixSub(double[][] A, double[][] B) {
-        int rowsA = A.length;
-        int colsA = A[0].length;
-        int rowsB = B.length;
-        int colsB = B[0].length;
+    public INDArray[] backwardProp(INDArray X, INDArray Y, INDArray[] forwardPropResults) {
+        INDArray Z1 = forwardPropResults[0];
+        INDArray A1 = forwardPropResults[1];
+        INDArray A2 = forwardPropResults[3];
 
-        if(rowsA != rowsB || colsA != colsB) {
-            throw new IllegalArgumentException("The dimensions of matrices A and B do not match.");
-        }
+        INDArray oneHotY = oneHot(Y);
+        int m = (int) X.size(0);
 
-        double[][] result = new double[rowsA][colsA];
-        for (int i = 0; i < rowsA; i++) {
-            for (int j = 0; j < colsA; j++) {
-                result[i][j] = A[i][j] - B[i][j];
-            }
-        }
-        return result;
+
+        INDArray dZ2 = A2.sub(oneHotY);
+        INDArray dW2 = dZ2.mmul(A1.transpose()).div(m);
+        INDArray db2 = dZ2.sum(1).reshape(new int[]{(int) dZ2.size(0), 1}).div(m);
+        INDArray dZ1 = W2.transpose().mmul(dZ2).mul(ReLU_deriv(Z1));
+        INDArray dW1 = dZ1.mmul(X.transpose()).div(m);
+        INDArray db1 = dZ1.sum(1).reshape(new int[]{(int) dZ1.size(0), 1}).div(m);
+
+        return new INDArray[]{dW1, db1, dW2, db2};
     }
 
 
-    public double[] vectorSub(double[] A, double[] B) {
-        int size = A.length;
-        double[] result = new double[size];
 
-        for (int i = 0; i < size; i++) {
-            result[i] = A[i] - B[i];
+    public void updateParams(INDArray dW1, INDArray db1, INDArray dW2, INDArray db2) {
+
+        W1.subi(dW1.mul(learningRate));
+        b1.subi(db1.mul(learningRate));
+        W2.subi(dW2.mul(learningRate));
+        b2.subi(db2.mul(learningRate));
+    }
+
+    public INDArray addNoise(INDArray X, double noiseLevel, double noiseProbability) {
+        // X: the original data
+        // noiseLevel: the standard deviation of the noise
+        // noiseProbability: the probability of a pixel being noisy
+
+        // Creating a mask of values that are either 0 or 1,
+        // where 1 indicates that noise should be added to that position
+        INDArray mask = Nd4j.rand(X.shape()).lt(noiseProbability);
+
+        // Creating a noise matrix
+        INDArray noise = Nd4j.randn(X.shape()).muli(noiseLevel);
+
+        // Applying the mask to the noise matrix: element-wise multiplication
+        INDArray maskedNoise = noise.mul(mask);
+
+        // Adding the masked noise to the original data
+        INDArray XNoisy = X.add(maskedNoise);
+
+        /* Printing a few examples of the masked noise data
+        int numExamplesToPrint = 5;
+        System.out.println("A few examples of the masked noise data:");
+        for (int i = 0; i < numExamplesToPrint; i++) {
+            System.out.println("Example " + i + ": " + maskedNoise.getColumn(i));
         }
 
-        return result;
+        // Printing the maximum value of the masked noise data
+        double maxVal = maskedNoise.maxNumber().doubleValue();
+        System.out.println("Maximum value in the masked noise data: " + maxVal);
+
+         */
+
+        return XNoisy;
     }
 
 
-    public double[][] matrixMultiply(double[][] A, double[][] B) {
-        int ARows = A.length;
-        int ACols = A[0].length;
-        int BCols = B[0].length;
-
-        double[][] result = new double[ARows][BCols];
-
-        for (int i = 0; i < ARows; i++) {
-            for (int j = 0; j < BCols; j++) {
-                result[i][j] = 0.0;
-                for (int k = 0; k < ACols; k++) {
-                    result[i][j] += A[i][k] * B[k][j];
-                }
-            }
-        }
-
-        return result;
-    }
-
-
-    //it is for the backpropagation step
-    public double[][] elementWiseMul(double[][] A, double[][] B) {
-        int rows = A.length;
-        int cols = A[0].length;
-
-        double[][] result = new double[rows][cols];
-
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                result[i][j] = A[i][j] * B[i][j];
-            }
-        }
-
-        return result;
-    }
-
-    public static double[][] transpose(double[][] A) {
-        int rows = A.length;
-        int cols = A[0].length;
-
-        double[][] result = new double[cols][rows];
-
-        for (int i = 0; i < rows; i++) {
-             for (int j = 0; j < cols; j++) {
-                result[j][i] = A[i][j];
-            }
-        }
-
-        return result;
-    }
-
-    public double[] sum(double[][] A, int axis) {
-        if (axis == 1) {
-            double[] result = new double[A.length];
-            for (int i = 0; i < A.length; i++) {
-                double sum = 0;
-                for (int j = 0; j < A[0].length; j++) {
-                    sum += A[i][j];
-                }
-                result[i] = sum;
-            }
-            return result;
-        } else {
-            // Handle other axis or throw an exception
-            throw new IllegalArgumentException("Invalid axis value.");
-        }
-    }
-
-    public double[][] scalarMultiply(double[][] matrix, double scalar) {
-        int rows = matrix.length;
-        int cols = matrix[0].length;
-        double[][] result = new double[rows][cols];
-
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                result[i][j] = matrix[i][j] * scalar;
-            }
-        }
-
-        return result;
-    }
-
-    public double[] scalarMultiply(double[] vector, double scalar) {
-        int size = vector.length;
-        double[] result = new double[size];
-
-        for (int i = 0; i < size; i++) {
-            result[i] = vector[i] * scalar;
-        }
-
-        return result;
-    }
-
-    public double[][] oneHotEncoding(int[] Y) {
-        int numberOfSamples = Y.length;
-        int numberOfClasses = 10;  // For digits 0-9
-
-        double[][] oneHotY = new double[numberOfSamples][numberOfClasses];
-
-        for (int i = 0; i < numberOfSamples; i++) {
-            oneHotY[i][Y[i]] = 1.0;
-        }
-
-        return oneHotY;
-    }
-
-
-    private double[][] ReLU(double[][] Z) {
-        int rows = Z.length;
-        int cols = Z[0].length;
-        double[][] A = new double[rows][cols];
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                A[i][j] = Math.max(0, Z[i][j]);
-            }
-        }
-        return A;
-    }
-
-    private double[][] softmax(double[][] Z) {
-        int rows = Z.length;
-        int cols = Z[0].length;
-        double[][] A = new double[rows][cols];
-        for (int j = 0; j < cols; j++) {
-            double colSum = 0;
-            for (int i = 0; i < rows; i++) {
-                colSum += Math.exp(Z[i][j]);
-            }
-            for (int i = 0; i < rows; i++) {
-                A[i][j] = Math.exp(Z[i][j]) / colSum;
-            }
-        }
-        return A;
-    }
-
-    private double[][] ReLU_D(double[][] Z) {
-        int rows = Z.length;
-        int cols = Z[0].length;
-        double[][] D = new double[rows][cols];
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                D[i][j] = Z[i][j] > 0 ? 1 : 0;
-            }
-        }
-        return D;
-    }
-
-//-------------------- Method for NN -------------------------
-
-    public NeuralNetwork(int inputSize, int hiddenSize, int outputSize) {
-        this.inputSize = inputSize;
-        this.hiddenSize = hiddenSize;
-        this.outputSize = outputSize;
-    }
-
-
-    public Map<String, Object> gradientDescent(double[][] X, int[] Y, double alpha, int iterations) {
-        // Initialize parameters
-        double[][] W1 = generateRandomMatrix(hiddenSize, inputSize);
-        double[] b1 = generateRandomArray(hiddenSize);
-        double[][] W2 = generateRandomMatrix(outputSize, hiddenSize);
-        double[] b2 = generateRandomArray(outputSize);
-
+    public void gradientDescent(INDArray X, INDArray Y, double alpha, int iterations) {
+        initParams();
         for (int i = 0; i < iterations; i++) {
-            Map<String, double[][]> forwardResults = forwardPropagation(W1, b1, W2, b2, X);
-            double[][] Z1 = forwardResults.get("Z1");
-            double[][] A1 = forwardResults.get("A1");
-            double[][] Z2 = forwardResults.get("Z2");
-            double[][] A2 = forwardResults.get("A2");
+            //INDArray XNoisy = addNoise(X, 0.05, 0.1);
+            INDArray[] forwardPropResults = forwardProp(X);
+            INDArray A2 = forwardPropResults[3];
+            INDArray[] gradients = backwardProp(X, Y, forwardPropResults);
+            updateParams(gradients[0], gradients[1], gradients[2], gradients[3]);
 
-            Map<String, Object> gradients = backwardPropagation(Z1, A1, Z2, A2, W1, W2, X, Y);
-            double[][] dW1 = (double[][]) gradients.get("dW1");
-            double[] db1 = (double[]) gradients.get("db1");
-            double[][] dW2 = (double[][]) gradients.get("dW2");
-            double[] db2 = (double[]) gradients.get("db2");
-
-            Map<String, Object> updatedParams = updateParameters(W1, b1, W2, b2, dW1, db1, dW2, db2, alpha);
-            W1 = (double[][]) updatedParams.get("W1");
-            b1 = (double[]) updatedParams.get("b1");
-            W2 = (double[][]) updatedParams.get("W2");
-            b2 = (double[]) updatedParams.get("b2");
-
-            if (i % 1 == 0) {
+            if (i % 20 == 0) {
                 System.out.println("Iteration: " + i);
                 int[] predictions = getPredictions(A2);
                 System.out.println("Accuracy: " + getAccuracy(predictions, Y) + " %");
             }
         }
-
-        Map<String, Object> finalParams = new HashMap<>();
-        finalParams.put("W1", W1);
-        finalParams.put("b1", b1);
-        finalParams.put("W2", W2);
-        finalParams.put("b2", b2);
-
-        return finalParams;
-    }
-
-    public Map<String, Object> updateParameters(double[][] W1, double[] b1, double[][] W2, double[] b2,
-                                                double[][] dW1, double[] db1, double[][] dW2, double[] db2,
-                                                double alpha){
-
-        W1 = matrixSub(W1, scalarMultiply(dW1, alpha));
-        b1 = vectorSub(b1, scalarMultiply(db1, alpha));
-        W2 = matrixSub(W2, scalarMultiply(dW2, alpha));
-        b2 = vectorSub(b2, scalarMultiply(db2, alpha));
-
-        Map<String, Object> updateParams = new HashMap<>();
-        updateParams.put("W1", W1);
-        updateParams.put("b1", b1);
-        updateParams.put("W2", W2);
-        updateParams.put("b2", b2);
-
-        return updateParams;
-    }
-
-
-    public Map<String, double[][]> forwardPropagation(double[][] W1, double[] b1, double[][] W2, double[] b2, double[][] X) {
-        double[][] Z1 = addMatrices(matrixMultiply(W1, X), b1);
-        double[][] A1 = ReLU(Z1);
-        double[][] Z2 = addMatrices(matrixMultiply(W2, A1), b2);
-        double[][] A2 = softmax(Z2);
-
-        Map<String, double[][]> results = new HashMap<>();
-        results.put("Z1", Z1);
-        results.put("A1", A1);
-        results.put("Z2", Z2);
-        results.put("A2", A2);
-
-        return results;
     }
 
 
 
-
-    public Map<String, Object> backwardPropagation(double[][] Z1, double[][] A1, double[][] Z2, double[][] A2,
-                                                   double[][] W1, double[][] W2, double[][] X, int[] Y) {
-
-        int m = Y.length;
-        double[][] oneHotY = oneHotEncoding(Y);
-        oneHotY = transpose(oneHotY);
-
-        double[][] dZ2 = matrixSub(A2, oneHotY);
-        double[][] dW2 = scalarMultiply(matrixMultiply(dZ2, transpose(A1)), 1.0 / m);
-        double[] db2 = scalarMultiply(sum(dZ2,1),1.0 / m);
-        double[][] dZ1 = elementWiseMul(matrixMultiply(transpose(W2), dZ2), ReLU_D(Z1));
-        double[][] dW1 = scalarMultiply(matrixMultiply(dZ1, transpose(X)), 1.0 / m);
-        double[] db1 = scalarMultiply(sum(dZ1,1),1.0/m);
-
-        Map<String, Object> gradients = new HashMap<>();
-        gradients.put("dW1", dW1);
-        gradients.put("db1", db1);
-        gradients.put("dW2", dW2);
-        gradients.put("db2", db2);
-
-        return gradients;
+    public int[] getPredictions(INDArray A2) {
+        // Finding the index of the maximum value in each column
+        return Nd4j.argMax(A2, 0).toIntVector();
     }
 
-    public int[] getPredictions(double[][] A2) {
-        int samples = A2[0].length;
-        int[] predictions = new int[samples];
-
-        for (int i = 0; i < samples; i++) {
-            double maxVal = A2[0][i];
-            int maxIndex = 0;
-
-            for (int j = 1; j < A2.length; j++) {
-                if (A2[j][i] > maxVal) {
-                    maxVal = A2[j][i];
-                    maxIndex = j;
-                }
-            }
-            predictions[i] = maxIndex;
-        }
-
-        return predictions;
-    }
-
-    public double getAccuracy(int[] predictions, int[] Y) {
+    public double getAccuracy(int[] predictions, INDArray Y) {
+        // Comparing predictions with actual values and calculating accuracy
         int correct = 0;
         for (int i = 0; i < predictions.length; i++) {
-            if (predictions[i] == Y[i]) {
+            if (predictions[i] == Y.getInt(i)) {
                 correct++;
             }
         }
-        return (double) correct / predictions.length * 100.0;  // Return accuracy in percentage
+        return 100.0 * correct / predictions.length;
     }
+
+
+    public void displayPredictions(INDArray X, INDArray Y, int numExamples) {
+        INDArray[] forwardPropResults = forwardProp(X);
+        INDArray A2 = forwardPropResults[3]; // Extracting A2 from the results
+        int[] predictions = getPredictions(A2);
+
+        System.out.println("Displaying " + numExamples + " predictions:");
+        for (int i = 0; i < numExamples; i++) {
+            int predictedLabel = predictions[i];
+            int actualLabel = Y.getInt(i);
+            System.out.println("Example " + i + ": Predicted = " + predictedLabel + ", Actual = " + actualLabel);
+        }
+    }
+
+    public void testPredict(INDArray X){
+
+        INDArray[] forwardPropResults = forwardProp(X);
+        INDArray A2 = forwardPropResults[3];
+        int[] predictions = getPredictions(A2);
+        System.out.println("You have drawn the number : " + predictions[0]);
+    }
+
+
+    public BufferedImage toBufferedImage(INDArray indArray) {
+        int width = (int) Math.sqrt(indArray.length());
+        int height = width;
+
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int grayValue = (int) (indArray.getDouble(y * width + x) * 255);  // Scale if necessary
+                int rgb = (grayValue << 16) | (grayValue << 8) | grayValue;
+                image.setRGB(x, y, rgb);
+            }
+        }
+
+        return image;
+    }
+
+    public void displayImage(BufferedImage img) {
+        // Scale the image
+        int scaledWidth = img.getWidth() * 5;  // Scale width
+        int scaledHeight = img.getHeight() * 5; // Scale height
+        Image scaledImage = img.getScaledInstance(scaledWidth, scaledHeight, Image.SCALE_DEFAULT);
+
+        ImageIcon icon = new ImageIcon(scaledImage);
+        JFrame frame = new JFrame();
+        JLabel label = new JLabel(icon);
+        frame.setLayout(new FlowLayout());
+        frame.setSize(scaledWidth, scaledHeight); // Adjust the frame size to fit the scaled image
+        frame.add(label);
+        frame.setVisible(true);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    }
+
+    public void testPrediction(INDArray XT, INDArray Y, int index) {
+        // Extracting a column vector representing an image
+        INDArray singleSample = XT.getColumn(index).reshape(1, XT.rows());
+        INDArray singleSampleT = singleSample.transpose();
+
+
+        // Making predictions
+        INDArray[] forwardPropResults = forwardProp(singleSampleT);
+        INDArray A2 = forwardPropResults[3];
+        int[] predictions = getPredictions(A2);
+
+        // Extracting the actual label
+        int actualLabel = Y.getInt(index);
+
+        // Displaying results
+        System.out.println("Prediction: " + predictions[0]);
+        System.out.println("Label: " + actualLabel);
+
+        // Reshape INDArray and convert to BufferedImage for display
+        BufferedImage img = toBufferedImage(singleSample);
+        displayImage(img);
+    }
+
+
+
+
+
 
 
 
 }
+
+
