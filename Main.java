@@ -1,10 +1,12 @@
 import data.DataReader;
 import data.Image_;
 import data.DataConverter;
+import data.DataCreator;
 import java.util.List;
 import java.util.Collections;
 import java.util.ArrayList;
 import org.nd4j.linalg.api.ndarray.INDArray;
+
 
 import javax.swing.*;
 
@@ -27,13 +29,21 @@ public class Main {
         INDArray[] data = DataConverter.convertToINDArrays(trainData);
         INDArray[] dataTestPerf = DataConverter.convertToINDArrays(devData);
 
-        INDArray X = data[0]; // Image data
-        INDArray XT = X.transpose();
-        INDArray Y = data[1]; // Labels
+        INDArray X = data[0];
+        INDArray augmentedX = DataCreator.augmentData(X);
 
-        INDArray XDev = dataTestPerf[0]; // Image data
+
+        INDArray XT = X.transpose();
+        INDArray augmentedXT = augmentedX.transpose();
+
+
+        INDArray Y = data[1];
+
+        INDArray XDev = dataTestPerf[0];
         INDArray XDevT = XDev.transpose();
         INDArray YDev = dataTestPerf[1];
+
+
 
 
 
@@ -44,7 +54,8 @@ public class Main {
         int numIterations = 300;
 
         // Train the neural network
-        nn.gradientDescent(XT, Y, learningRate, numIterations);
+        //nn.gradientDescent(XT, Y, learningRate, numIterations);
+        nn.gradientDescent(augmentedXT, Y, learningRate, numIterations);
 
         nn.testPrediction(XDevT, YDev, 5);
         nn.testPrediction(XDevT, YDev, 6);

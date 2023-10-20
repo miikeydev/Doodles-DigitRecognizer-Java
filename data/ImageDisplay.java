@@ -46,7 +46,7 @@ public class ImageDisplay {
         trainData.forEach(Image_::normalize);
 
         INDArray[] data = DataConverter.convertToINDArrays(trainData);
-        INDArray imageData = data[0]; // This contains all the images with shape [41000, 784]
+        INDArray imageData = data[0];
         INDArray labels = data[1];
 
         // Display original images
@@ -57,6 +57,8 @@ public class ImageDisplay {
 
         // Augment the images
         INDArray augmentedImageData = DataCreator.augmentData(imageData);
+
+
 
         // Display augmented images
         for (int i = 0; i < 5; i++) {

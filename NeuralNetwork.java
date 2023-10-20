@@ -13,7 +13,7 @@ public class NeuralNetwork {
     private INDArray W1, b1, W2, b2;
     private double learningRate = 0.01;
     private int numInputs = 784;
-    private int numHidden = 10;
+    private int numHidden = 100;
     private int numOutputs = 10;
 
     public NeuralNetwork() {

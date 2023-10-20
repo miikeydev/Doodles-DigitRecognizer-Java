@@ -9,12 +9,11 @@ public class DrawingPanel extends JPanel {
     private int[][] pixels = new int[GRID_SIZE][GRID_SIZE];
     private int oldX = -1;
     private int oldY = -1;
-    private float brushRadius = 3.0f;
-    private float smoothing = 0.7f;
-
-    private float coreRadius = 0.5f;
+    private float brushRadius = 4f;
+    private float coreRadius = 0.1f;
 
     public DrawingPanel() {
+        setPreferredSize(new Dimension(GRID_SIZE * PIXEL_SIZE, GRID_SIZE * PIXEL_SIZE));
         addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {

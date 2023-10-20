@@ -36,39 +36,61 @@ public class DataCreator {
     }
 
 
+    //-------------------------ZOOM---------------------------------------------------------------
+
+
+
+    private static double bilinearInterpolateZ(INDArray image, double x, double y) {
+        int x1 = (int) Math.floor(x);
+        int x2 = x1 + 1;
+        int y1 = (int) Math.floor(y);
+        int y2 = y1 + 1;
+
+        double q11 = getPixel(image, x1, y1);
+        double q12 = getPixel(image, x1, y2);
+        double q21 = getPixel(image, x2, y1);
+        double q22 = getPixel(image, x2, y2);
+
+        return interpolateZ(interpolateZ(q11, q21, x - x1), interpolateZ(q12, q22, x - x1), y - y1);
+    }
+
+    private static double getPixel(INDArray image, int x, int y) {
+        if (x >= 0 && x < 28 && y >= 0 && y < 28) {
+            return image.getDouble(x, y);
+        } else {
+            return 0;
+        }
+    }
+
+    private static double interpolateZ(double a, double b, double t) {
+        return a + t * (b - a);
+    }
+
+
     private static INDArray zoom(INDArray image) {
         Random rand = new Random();
+        double scale = 0.4 + (rand.nextDouble() * 1.0);
 
-        // Randomly select crop values between 0 and 10 for zooming in or out
-        int cropX = rand.nextInt(5); // this will give values between 0 (inclusive) and 11 (exclusive)
-        int cropY = cropX;  // Assuming square images, but you can generate a separate random value for Y if needed
-
-        // Adjust crop margins based on random values
-        INDArray cropped = image.get(NDArrayIndex.interval(cropX, 28 - cropX), NDArrayIndex.interval(cropY, 28 - cropY));
-
-        // Calculate new dimensions
-        int newWidth = 28 - 2 * cropX;
-        int newHeight = 28 - 2 * cropY;
-
-        // Simple interpolation to resize back to 28x28
         INDArray zoomed = Nd4j.zeros(28, 28);
         for (int i = 0; i < 28; i++) {
             for (int j = 0; j < 28; j++) {
-                int srcX = i * newWidth / 28;
-                int srcY = j * newHeight / 28;
-                zoomed.putScalar(i, j, cropped.getDouble(srcX, srcY));
+                double srcX = (i - 14) / scale + 14;
+                double srcY = (j - 14) / scale + 14;
+                zoomed.putScalar(i, j, bilinearInterpolateZ(image, srcX, srcY));
             }
         }
-
         return zoomed;
     }
+
+    //-------------------------TRANSLATION---------------------------------------------------------------
+
 
     private static INDArray translate(INDArray image) {
         Random random = new Random();
 
         // Generate a random translation between 0 and 7 for x and y directions
-        int translationX = random.nextInt(8);
-        int translationY = random.nextInt(8);
+        int translationX = random.nextInt(5);
+        int translationY = random.nextInt(5);
 
         // Randomly decide if the translation should be positive or negative
         translationX = random.nextBoolean() ? translationX : -translationX;
@@ -87,34 +109,57 @@ public class DataCreator {
         return translated;
     }
 
+
+
+    //-------------------------ROTATION---------------------------------------------------------------
+
+    private static double interpolateR(double val1, double val2, double fraction) {
+        return val1 * (1 - fraction) + val2 * fraction;
+    }
+
+    private static double bilinearInterpolateR(INDArray image, double x, double y) {
+        int x1 = (int) x;
+        int y1 = (int) y;
+        int x2 = (int) Math.min(x1 + 1, image.shape()[0] - 1);
+        int y2 = (int) Math.min(y1 + 1, image.shape()[1] - 1);
+
+        double r1 = interpolateR(image.getDouble(x1, y1), image.getDouble(x1, y2), y - y1);
+        double r2 = interpolateR(image.getDouble(x2, y1), image.getDouble(x2, y2), y - y1);
+
+        return interpolateR(r1, r2, x - x1);
+    }
+
     private static INDArray rotate(INDArray image) {
+
         Random rand = new Random();
 
-        // Generate a random angle between 0 and 45 degrees
-        double angle = rand.nextDouble() * 45;
+        double angleInDegrees = 1 + rand.nextDouble() * 36;
+        double angleInRadians = Math.toRadians(angleInDegrees);
 
-        // Randomly choose the rotation direction (trigonometric or anti-trigonometric)
-        if (rand.nextBoolean()) {
-            angle = -angle; // This makes the rotation go clockwise
-        }
+        int width = (int) image.shape()[0];
+        int height = (int) image.shape()[1];
 
-        double radians = Math.toRadians(angle);
-        double cosTheta = Math.cos(radians);
-        double sinTheta = Math.sin(radians);
-        INDArray rotated = Nd4j.zeros(28, 28);
-        int centerX = 14;
-        int centerY = 14;
+        INDArray output = Nd4j.zeros(width, height);
 
-        for (int x = 0; x < 28; x++) {
-            for (int j = 0; j < 28; j++) {
-                int newX = (int) ((x - centerX) * cosTheta - (j - centerY) * sinTheta + centerX);
-                int newY = (int) ((x - centerX) * sinTheta + (j - centerY) * cosTheta + centerY);
-                if (newX >= 0 && newX < 28 && newY >= 0 && newY < 28) {
-                    rotated.putScalar(x, j, image.getDouble(newX, newY));
+        int centerX = width / 2;
+        int centerY = height / 2;
+
+        double cosAngle = Math.cos(angleInRadians);
+        double sinAngle = Math.sin(angleInRadians);
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                double sourceX = (x - centerX) * cosAngle + (y - centerY) * sinAngle + centerX;
+                double sourceY = (y - centerY) * cosAngle - (x - centerX) * sinAngle + centerY;
+
+                if (sourceX >= 0 && sourceX < width - 1 && sourceY >= 0 && sourceY < height - 1) {
+                    output.putScalar(x, y, bilinearInterpolateR(image, sourceX, sourceY));
+                } else {
+                    output.putScalar(x, y, 0);  // or any other default value
                 }
             }
         }
 
-        return rotated;
+        return output;
     }
 }
