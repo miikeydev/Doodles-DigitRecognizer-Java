@@ -1,3 +1,5 @@
+import data.Image_;
+import org.deeplearning4j.datasets.iterator.utilty.ListDataSetIterator;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
@@ -12,21 +14,25 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.nd4j.linalg.learning.config.Adam;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.DataSet;
+
+
 
 public class SuperNeuralNetwork {
-
     private static MultiLayerNetwork network;
 
-    public SuperNeuralNetwork(int numInputs, int numHidden, int numOutputs, int numEpochs, INDArray yourTrainingData, INDArray yourLabels) {
+    public SuperNeuralNetwork(int numInputs, int numHidden, int numOutputs, int numEpochs) {
         int seed = 123;
-
-        // Learning rate schedule
-        double learningRate = 0.1; // You can adjust the learning rate
 
         // Create a configuration for the neural network
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(seed)
-                .updater(new Adam(learningRate))  // You can choose other optimizers like Nesterovs, etc.
+                .updater(new Adam(0.1))
                 .weightInit(WeightInit.XAVIER)
                 .list()
                 .layer(0, new DenseLayer.Builder()
@@ -43,46 +49,89 @@ public class SuperNeuralNetwork {
 
         network = new MultiLayerNetwork(conf);
         network.init();
-
-        // Train the network
-        for (int i = 0; i < numEpochs; i++) {
-            network.fit(yourTrainingData, yourLabels);
-        }
     }
 
     public INDArray predict(INDArray input) {
         return network.output(input, false);
     }
 
-    public static void main(String[] args) {
-        int numInputs = 784; // Adjust based on your input size
-        int numHidden = 100; // The desired number of hidden neurons
-        int numOutputs = 10; // Adjust based on your output size
-        int numEpochs = 15;  // Number of training epochs
 
-        INDArray input = Nd4j.zeros(1, numInputs); // Initialize with zeros or any suitable value
-        INDArray yourTrainingData = Nd4j.zeros(1, numInputs); // Initialize with zeros or any suitable value
-        INDArray yourLabels = Nd4j.zeros(1, numOutputs); // Initialize with zeros or any suitable value
 
-        SuperNeuralNetwork superNN = new SuperNeuralNetwork(numInputs, numHidden, numOutputs, numEpochs, yourTrainingData, yourLabels);
+    public void train(INDArray X, INDArray Y, int nbIterations) {
 
-        // Call the 'train' function with your data for a specified number of iterations
-        superNN.train(yourTrainingData, yourLabels, 1000); // Specify the number of iterations
+        System.out.println("Sample input data:");
+        System.out.println(X.getRow(0)); // Display the first row of X
+        System.out.println("Sample labels:");
+        System.out.println(Y.getRow(0)); // Display the first row of Y
 
-        // You can use the 'predict' method to make predictions on new data
-        // INDArray input = null; // Provide your input data
-        INDArray prediction = superNN.predict(input);
-        System.out.println("Prediction: " + prediction);
-    }
 
-    public static void train(INDArray X, INDArray Y, int nbiterations){
-        // Il faut que cette fonction ne renvoi rien, mais affiche ma matrice X entrainée
-        // preciser les dimension des indarray (41 000 x 784 pour X et 41 000 x 1 pour Y)
-
-        for (int i = 0; i < 10; i++) {
-            network.fit(X, Y);
+        for (int i = 0; i < 20; i++) {
+            // Print training progress
+            if (i % 20 == 0) {
+                System.out.println("Iteration " + i + ": Loss = " + network.score());
+            }
+            DataSetIterator dataSetIterator = createDataSetIterator(X, Y);
+            network.fit(dataSetIterator);
         }
 
+        // After training, you can display the trained X array
+        System.out.println("Trained X array:");
+        System.out.println(X);
 
+
+    }
+
+    // Create a DataSetIterator from your data
+    private DataSetIterator createDataSetIterator(INDArray X, INDArray Y) {
+        // Convert your INDArray X to a list of Image_ instances
+        List<Image_> images = convertToImageList(X, Y);
+
+        // Normalize the data
+        for (Image_ image : images) {
+            image.normalize();
+        }
+
+        // Create a list of DataSets
+        List<DataSet> dataSets = convertToDataSets(images);
+
+        // Create a ListDataSetIterator with a batch size of 1
+        return new ListDataSetIterator<>(dataSets, 1);
+    }
+
+    private List<Image_> convertToImageList(INDArray X, INDArray Y) {
+        // Implement your logic to convert INDArray to a list of Image_ instances
+        // This may involve extracting data and labels from X and Y
+        // and creating Image_ instances
+        List<Image_> images = new ArrayList<>();
+        // Add your logic to populate 'images' from X and Y
+        return images;
+    }
+
+    private List<DataSet> convertToDataSets(List<Image_> images) {
+        // Implement your logic to convert a list of Image_ instances to DataSets
+        // This is similar to the DataConverter class, but you are working with a list of Image_ instances
+        List<DataSet> dataSets = new ArrayList<>();
+        // Add your logic to convert 'images' to 'dataSets'
+        return dataSets;
+    }
+    
+
+    public static void main(String[] args) {
+        int numInputs = 784;
+        int numHidden = 100;
+        int numOutputs = 10;
+        int numEpochs = 15;
+
+        SuperNeuralNetwork superNN = new SuperNeuralNetwork(numInputs, numHidden, numOutputs, numEpochs);
+
+        INDArray input = Nd4j.zeros(1, numInputs); // Initialize with zeros or any suitable value
+        INDArray yourTrainingData = Nd4j.zeros(41000, numInputs); // Initialize with your data
+        INDArray yourLabels = Nd4j.zeros(41000, numOutputs); // Initialize with your labels
+
+        superNN.train(yourTrainingData, yourLabels, 1000);
+
+        // You can use the 'predict' method to make predictions on new data
+        INDArray prediction = superNN.predict(input);
+        System.out.println("Prediction: " + prediction);
     }
 }
