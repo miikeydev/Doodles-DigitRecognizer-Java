@@ -24,6 +24,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.DataSet;
 import data.DataReader;
 import data.DataConverter;
+import data.DataCreator;
 
 
 
@@ -97,7 +98,7 @@ public class SuperNeuralNetwork {
 
 
 
-    public INDArray oneHotEncoding(INDArray Y, int numClasses) {
+    public static INDArray oneHotEncoding(INDArray Y, int numClasses) {
         int totalExamples = Y.rows();
         INDArray oneHot = Nd4j.zeros(totalExamples, numClasses);
 
@@ -118,31 +119,27 @@ public class SuperNeuralNetwork {
     // Create a DataSetIterator from your data
 
     public static void main(String[] args) {
-        int numInputs = 784; // Adjust based on your input size
-        int numOutputs = 10; // Adjust based on your output size
-        double learningRate = 0.1;
-        int numEpochs = 15;  // Number of training epochs
-        int displayInterval = 1;
-
-        // Load your training data and labels
-        data.DataReader reader = new data.DataReader();
-        List<Image_> trainingData = DataReader.readData("src/resources/train.csv"); // Replace with the actual path
-        INDArray[] trainingDataArrays = DataConverter.convertToINDArrays(trainingData);
-        INDArray yourTrainingData = trainingDataArrays[0];
-        INDArray yourLabels = trainingDataArrays[1];
-
+        String path = "src/resources/train.csv";
+        DataReader dataReader = new DataReader();
+        List<Image_> images = dataReader.readData(path);
+        Collections.shuffle(images);
+        List<Image_> trainData = new ArrayList<>(images.subList(1000, images.size()));
+        trainData.forEach(Image_::normalize);
+        INDArray[] data = DataConverter.convertToINDArrays(trainData);
+        INDArray X = data[0];
+        INDArray Y = data[1];
+        int numInputs = 784;
+        int numOutputs = 10;
+        double learningRate = 0.65;
+        int epochs = 200;
+        int displayInterval = 20;
         SuperNeuralNetwork superNN = new SuperNeuralNetwork(numInputs, numOutputs, learningRate);
-
-        // One-hot encode the labels
-        int numClasses = numOutputs; // Replace with the actual number of classes
-        INDArray oneHotLabels = superNN.oneHotEncoding(yourLabels, numClasses);
-
-        // Train the network
-        superNN.train(yourTrainingData, oneHotLabels, numEpochs, learningRate, displayInterval);
-
-        // Evaluate accuracy
-        double accuracy = superNN.evaluateAccuracy(yourTrainingData, oneHotLabels);
-        System.out.println("Accuracy: " + accuracy);
+        superNN.train(X, Y, epochs, learningRate, displayInterval);
     }
 
+
+
+
 }
+
+
