@@ -1,0 +1,88 @@
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.nd4j.linalg.learning.config.Adam;
+import java.io.IOException;
+
+public class SuperNeuralNetwork {
+
+    private static MultiLayerNetwork network;
+
+    public SuperNeuralNetwork(int numInputs, int numHidden, int numOutputs, int numEpochs, INDArray yourTrainingData, INDArray yourLabels) {
+        int seed = 123;
+
+        // Learning rate schedule
+        double learningRate = 0.1; // You can adjust the learning rate
+
+        // Create a configuration for the neural network
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(seed)
+                .updater(new Adam(learningRate))  // You can choose other optimizers like Nesterovs, etc.
+                .weightInit(WeightInit.XAVIER)
+                .list()
+                .layer(0, new DenseLayer.Builder()
+                        .nIn(numInputs)
+                        .nOut(numHidden)
+                        .activation(Activation.RELU)
+                        .build())
+                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                        .nIn(numHidden)
+                        .nOut(numOutputs)
+                        .activation(Activation.SOFTMAX)
+                        .build())
+                .build();
+
+        network = new MultiLayerNetwork(conf);
+        network.init();
+
+        // Train the network
+        for (int i = 0; i < numEpochs; i++) {
+            network.fit(yourTrainingData, yourLabels);
+        }
+    }
+
+    public INDArray predict(INDArray input) {
+        return network.output(input, false);
+    }
+
+    public static void main(String[] args) {
+        int numInputs = 784; // Adjust based on your input size
+        int numHidden = 100; // The desired number of hidden neurons
+        int numOutputs = 10; // Adjust based on your output size
+        int numEpochs = 15;  // Number of training epochs
+
+        INDArray input = Nd4j.zeros(1, numInputs); // Initialize with zeros or any suitable value
+        INDArray yourTrainingData = Nd4j.zeros(1, numInputs); // Initialize with zeros or any suitable value
+        INDArray yourLabels = Nd4j.zeros(1, numOutputs); // Initialize with zeros or any suitable value
+
+        SuperNeuralNetwork superNN = new SuperNeuralNetwork(numInputs, numHidden, numOutputs, numEpochs, yourTrainingData, yourLabels);
+
+        // Call the 'train' function with your data for a specified number of iterations
+        superNN.train(yourTrainingData, yourLabels, 1000); // Specify the number of iterations
+
+        // You can use the 'predict' method to make predictions on new data
+        // INDArray input = null; // Provide your input data
+        INDArray prediction = superNN.predict(input);
+        System.out.println("Prediction: " + prediction);
+    }
+
+    public static void train(INDArray X, INDArray Y, int nbiterations){
+        // Il faut que cette fonction ne renvoi rien, mais affiche ma matrice X entrainée
+        // preciser les dimension des indarray (41 000 x 784 pour X et 41 000 x 1 pour Y)
+
+        for (int i = 0; i < 10; i++) {
+            network.fit(X, Y);
+        }
+
+
+    }
+}
