@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -17,22 +18,28 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.DataSet;
+import data.DataReader;
+import data.DataConverter;
+
+
 
 
 
 public class SuperNeuralNetwork {
     private static MultiLayerNetwork network;
 
-    public SuperNeuralNetwork(int numInputs, int numHidden, int numOutputs, int numEpochs) {
+    public SuperNeuralNetwork(int numInputs, int numOutputs, double learningRate) {
         int seed = 123;
+        int numHidden = 100; // You can adjust this based on your needs
 
         // Create a configuration for the neural network
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(seed)
-                .updater(new Adam(0.1))
+                .updater(new Adam(learningRate))
                 .weightInit(WeightInit.XAVIER)
                 .list()
                 .layer(0, new DenseLayer.Builder()
@@ -49,89 +56,93 @@ public class SuperNeuralNetwork {
 
         network = new MultiLayerNetwork(conf);
         network.init();
+
+        // Listener to print the score every iteration
+        network.setListeners(new ScoreIterationListener(1));
+    }
+
+
+    public void train(INDArray X, INDArray Y, int epochs, double learningRate, int displayInterval) {
+        for (int i = 0; i < epochs; i++) {
+            network.fit(X, Y);
+
+            if ((i + 1) % displayInterval == 0) {
+                double score = network.score();
+                System.out.println("Epoch " + (i + 1) + " - Score: " + score);
+            }
+        }
+    }
+
+    public double evaluateAccuracy(INDArray X, INDArray Y) {
+        int totalExamples = X.rows();
+        int correctPredictions = 0;
+
+        for (int i = 0; i < totalExamples; i++) {
+            INDArray input = X.getRow(i, true);
+            INDArray label = Y.getRow(i, true);
+
+            INDArray predicted = network.output(input, false);
+
+            int actualLabel = label.argMax(1).getInt(0);
+            int predictedLabel = predicted.argMax(1).getInt(0);
+
+            if (actualLabel == predictedLabel) {
+                correctPredictions++;
+            }
+        }
+
+        double accuracy = (double) correctPredictions / totalExamples;
+        return accuracy;
+    }
+
+
+
+    public INDArray oneHotEncoding(INDArray Y, int numClasses) {
+        int totalExamples = Y.rows();
+        INDArray oneHot = Nd4j.zeros(totalExamples, numClasses);
+
+        for (int i = 0; i < totalExamples; i++) {
+            int label = Y.getInt(i);
+
+            // Set the corresponding element to 1
+            oneHot.putScalar(new int[]{i, label}, 1.0);
+        }
+
+        return oneHot;
     }
 
     public INDArray predict(INDArray input) {
         return network.output(input, false);
     }
 
-
-
-    public void train(INDArray X, INDArray Y, int nbIterations) {
-
-        System.out.println("Sample input data:");
-        System.out.println(X.getRow(0)); // Display the first row of X
-        System.out.println("Sample labels:");
-        System.out.println(Y.getRow(0)); // Display the first row of Y
-
-
-        for (int i = 0; i < 20; i++) {
-            // Print training progress
-            if (i % 20 == 0) {
-                System.out.println("Iteration " + i + ": Loss = " + network.score());
-            }
-            DataSetIterator dataSetIterator = createDataSetIterator(X, Y);
-            network.fit(dataSetIterator);
-        }
-
-        // After training, you can display the trained X array
-        System.out.println("Trained X array:");
-        System.out.println(X);
-
-
-    }
-
     // Create a DataSetIterator from your data
-    private DataSetIterator createDataSetIterator(INDArray X, INDArray Y) {
-        // Convert your INDArray X to a list of Image_ instances
-        List<Image_> images = convertToImageList(X, Y);
-
-        // Normalize the data
-        for (Image_ image : images) {
-            image.normalize();
-        }
-
-        // Create a list of DataSets
-        List<DataSet> dataSets = convertToDataSets(images);
-
-        // Create a ListDataSetIterator with a batch size of 1
-        return new ListDataSetIterator<>(dataSets, 1);
-    }
-
-    private List<Image_> convertToImageList(INDArray X, INDArray Y) {
-        // Implement your logic to convert INDArray to a list of Image_ instances
-        // This may involve extracting data and labels from X and Y
-        // and creating Image_ instances
-        List<Image_> images = new ArrayList<>();
-        // Add your logic to populate 'images' from X and Y
-        return images;
-    }
-
-    private List<DataSet> convertToDataSets(List<Image_> images) {
-        // Implement your logic to convert a list of Image_ instances to DataSets
-        // This is similar to the DataConverter class, but you are working with a list of Image_ instances
-        List<DataSet> dataSets = new ArrayList<>();
-        // Add your logic to convert 'images' to 'dataSets'
-        return dataSets;
-    }
-    
 
     public static void main(String[] args) {
-        int numInputs = 784;
-        int numHidden = 100;
-        int numOutputs = 10;
-        int numEpochs = 15;
+        int numInputs = 784; // Adjust based on your input size
+        int numOutputs = 10; // Adjust based on your output size
+        double learningRate = 0.1;
+        int numEpochs = 15;  // Number of training epochs
+        int displayInterval = 1;
 
-        SuperNeuralNetwork superNN = new SuperNeuralNetwork(numInputs, numHidden, numOutputs, numEpochs);
+        // Load your training data and labels
+        data.DataReader reader = new data.DataReader();
+        List<Image_> trainingData = DataReader.readData("src/resources/train.csv"); // Replace with the actual path
+        INDArray[] trainingDataArrays = DataConverter.convertToINDArrays(trainingData);
+        INDArray yourTrainingData = trainingDataArrays[0];
+        INDArray yourLabels = trainingDataArrays[1];
 
-        INDArray input = Nd4j.zeros(1, numInputs); // Initialize with zeros or any suitable value
-        INDArray yourTrainingData = Nd4j.zeros(41000, numInputs); // Initialize with your data
-        INDArray yourLabels = Nd4j.zeros(41000, numOutputs); // Initialize with your labels
+        SuperNeuralNetwork superNN = new SuperNeuralNetwork(numInputs, numOutputs, learningRate);
 
-        superNN.train(yourTrainingData, yourLabels, 1000);
+        // One-hot encode the labels
+        int numClasses = numOutputs; // Replace with the actual number of classes
+        INDArray oneHotLabels = superNN.oneHotEncoding(yourLabels, numClasses);
 
-        // You can use the 'predict' method to make predictions on new data
-        INDArray prediction = superNN.predict(input);
-        System.out.println("Prediction: " + prediction);
+        // Train the network
+        superNN.train(yourTrainingData, oneHotLabels, numEpochs, learningRate, displayInterval);
+
+        // Evaluate accuracy
+        double accuracy = superNN.evaluateAccuracy(yourTrainingData, oneHotLabels);
+        System.out.println("Accuracy: " + accuracy);
     }
+
 }
