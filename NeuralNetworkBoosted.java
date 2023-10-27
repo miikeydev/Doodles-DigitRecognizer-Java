@@ -2,6 +2,9 @@ import data.DataConverter;
 import data.DataCreator;
 import data.DataReader;
 import data.Image_;
+
+import java.io.File;
+import org.nd4j.linalg.learning.config.Adam;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -19,6 +22,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.learning.config.Sgd;
 
 import javax.swing.*;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,10 +32,9 @@ public class NeuralNetworkBoosted {
     private MultiLayerNetwork model;
 
     public NeuralNetworkBoosted(int numInputs, int numOutputs, double learningRate) {
-        // Define your neural network architecture here.
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(new Sgd(learningRate))
+                .updater(new Adam(learningRate))
                 .seed(123)
                 .list()
                 .layer(0, new DenseLayer.Builder()
@@ -50,11 +53,7 @@ public class NeuralNetworkBoosted {
 
         model = new MultiLayerNetwork(conf);
         model.init();
-
-        // Listener to print the score every iteration
         model.setListeners(new ScoreIterationListener(1));
-
-
     }
 
 
@@ -103,47 +102,100 @@ public class NeuralNetworkBoosted {
         return model.output(input);
     }
 
+    public String predictWithLabels(INDArray input) {
+        INDArray probabilities = model.output(input);
+
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < probabilities.columns(); i++) {
+            result.append(String.format("Label %d: %.4f%%\n", i, probabilities.getDouble(i) * 100));
+        }
+
+        return result.toString();
+    }
+
+    public void saveModel(String path) throws IOException {
+        File modelSaveLocation = new File(path);
+        model.save(modelSaveLocation);
+    }
+
+    public static MultiLayerNetwork loadModel(String path) throws IOException {
+        File modelSaveLocation = new File(path);
+        return MultiLayerNetwork.load(modelSaveLocation, true);
+    }
 
 
 
-    public static void main(String[] args) {
+
+    public static void main(String[] args) throws IOException {
 
         List<Image_> images = new DataReader().readData("data/train.csv");
         Collections.shuffle(images);
 
+
+        List<Image_> devData = new ArrayList<>(images.subList(0, 1000));
         List<Image_> trainData = new ArrayList<>(images.subList(1000, images.size()));
 
-
+        devData.forEach(Image_::normalize);
         trainData.forEach(Image_::normalize);
 
         INDArray[] data = DataConverter.convertToINDArrays(trainData);
+        INDArray[] dataTestPerf = DataConverter.convertToINDArrays(devData);
+
+        INDArray XTestPerf = dataTestPerf[0];
+        INDArray YTestPerf = dataTestPerf[1];
 
 
         INDArray X = data[0];
         INDArray augmentedX = DataCreator.augmentData(X);
 
-
-        INDArray XT = X.transpose();
-        INDArray augmentedXT = augmentedX.transpose();
-
-
-
         INDArray Y = data[1];
         Y = oneHotEncode(Y, 10);
 
-        System.out.println("Shape of XT: " + java.util.Arrays.toString(XT.shape()));
-        System.out.println("Shape of Y: " + java.util.Arrays.toString(Y.shape()));
 
-        int epochs = 200;
+
+        int epochs = 5;
         int numInputs = 784;
         int numOutputs = 10;
-        double learningRate = 0.65;
-        int displayInterval = 20;
+        double learningRate = 0.001;
+        int displayInterval = 10;
 
 
-        NeuralNetworkBoosted neuralNetwork = new NeuralNetworkBoosted(numInputs, numOutputs, learningRate);
+        NeuralNetworkBoosted neuralNetwork = new NeuralNetworkBoosted(numInputs, numOutputs, learningRate); // This will initialize a new model
+        neuralNetwork.model = NeuralNetworkBoosted.loadModel("savedmodel/savedmodel1.model"); // Load the pre-trained model into the 'model' field of the object
+        neuralNetwork.model.setListeners(new ScoreIterationListener(1));
 
-        neuralNetwork.train(augmentedX, Y, epochs, learningRate, displayInterval);
+
+
+        neuralNetwork.train(X, Y, epochs, learningRate, displayInterval);
+
+
+
+
+        neuralNetwork.saveModel("savedmodel/savedmodel1.model");
+
+
+        for (int i = 0; i < 10; i++) {
+            INDArray sample = XTestPerf.getRow(i).reshape(1, -1);  // Reshape the sample to [1, 784]
+            String prediction = neuralNetwork.predictWithLabels(sample);  // Get the prediction
+
+            int trueLabelIndex = YTestPerf.getInt(i);  // Assuming the labels are stored as integers
+
+            System.out.println("Sample " + (i+1) + ":");
+            System.out.println("Predicted: " + prediction);
+            System.out.println("True Label: Label " + trueLabelIndex);
+            System.out.println("--------------");
+        }
+
+
+        //DrawingBoard board = new DrawingBoard();
+
+
+
+
+
+
+
+
 
         DrawingFrame frame = new DrawingFrame();
 
@@ -158,6 +210,10 @@ public class NeuralNetworkBoosted {
                 e.printStackTrace();
             }
         }
+
+
+
+        
 
 
 

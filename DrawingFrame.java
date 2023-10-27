@@ -39,8 +39,8 @@ public class DrawingFrame extends JFrame {
             } else {
                 data_created = data_created.reshape(1, 784);
                 NeuralNetworkBoosted boostedNetwork = new NeuralNetworkBoosted(784, 10, 0.7);
-                INDArray predictions = boostedNetwork.predict(data_created);
-                System.out.println("Predictions: " + predictions);
+                String predictions = boostedNetwork.predictWithLabels(data_created);
+                System.out.println(predictions);
             }
         });
         buttonPanel.add(retrieveDataButton);
