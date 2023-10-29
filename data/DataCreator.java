@@ -6,10 +6,22 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+
+import org.opencv.core.Core;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
+
 import java.util.Arrays;
 
 
 public class DataCreator {
+
+    static {
+        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+    }
+
 
     public static INDArray augmentData(INDArray originalImageData) {
         INDArray augmentedImages = Nd4j.zeros(originalImageData.shape());
@@ -23,18 +35,20 @@ public class DataCreator {
         return augmentedImages;
     }
 
-    private static INDArray applyTransformations(INDArray originalImage) {
-        originalImage = originalImage.reshape(28, 28); // Ensure the image is 28x28
-
-        // Sequentially apply transformations
-        INDArray zoomedImage = zoom(originalImage);
-        INDArray translatedImage = translate(zoomedImage);
-        INDArray rotatedImage = rotate(translatedImage);
-        INDArray noisyImage = addNoise(rotatedImage, 0.07);
+    private static INDArray applyTransformations(INDArray Image) {
+        Image = Image.reshape(28, 28); // Ensure the image is 28x28
 
 
-        // Reshape the final transformed image back to 1x784 before returning
-        return noisyImage.reshape(1, 784);
+        //Image = zoom(Image);
+        Image = translate(Image);
+        Image = rotate(Image);
+        Image = blur(Image);
+        Image = addNoise(Image, 0.10);
+
+
+
+
+        return Image.reshape(1, 784);
     }
 
 
@@ -196,4 +210,35 @@ public class DataCreator {
         return image;
     }
 
+
+    //--------------------------- BLUR ------------------------------------------
+
+    public static INDArray blur(INDArray input) {
+        // Convertir INDArray en Mat
+        Mat mat = new Mat(28, 28, CvType.CV_8U);
+        for (int i = 0; i < 28; i++) {
+            for (int j = 0; j < 28; j++) {
+                mat.put(i, j, input.getDouble(i, j));
+            }
+        }
+
+        // Agrandir l'image à 56x56 avec INTER_LINEAR (ou INTER_CUBIC)
+        Mat enlargedMat = new Mat();
+        Imgproc.resize(mat, enlargedMat, new Size(600, 600), 0, 0, Imgproc.INTER_LINEAR);
+
+        // Réduire l'image à 28x28 avec INTER_AREA
+        Mat reducedMat = new Mat();
+        Imgproc.resize(enlargedMat, reducedMat, new Size(28, 28), 0, 0, Imgproc.INTER_AREA);
+
+        // Convertir Mat en INDArray
+        INDArray output = Nd4j.create(28, 28);
+        for (int i = 0; i < 28; i++) {
+            for (int j = 0; j < 28; j++) {
+                output.putScalar(new int[]{i, j}, reducedMat.get(i, j)[0]);
+            }
+        }
+
+        return output;
+
+    }
 }

@@ -140,11 +140,15 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
         Mat resizedMat = new Mat();
         Imgproc.resize(mat, resizedMat, new Size(28, 28), 0, 0, Imgproc.INTER_AREA);
 
-        // Convertissez la matrice redimensionnée en un tableau 2D
+        // Appliquez une opération de seuillage pour obtenir une image binaire
+        Mat binaryMat = new Mat();
+        Imgproc.threshold(resizedMat, binaryMat, 128, 255, Imgproc.THRESH_BINARY);
+
+        // Convertissez la matrice binaire en un tableau 2D
         int[][] resizedData = new int[28][28];
         for (int row = 0; row < 28; row++) {
             for (int col = 0; col < 28; col++) {
-                resizedData[row][col] = (int) resizedMat.get(row, col)[0];
+                resizedData[row][col] = (int) binaryMat.get(row, col)[0];
             }
         }
 

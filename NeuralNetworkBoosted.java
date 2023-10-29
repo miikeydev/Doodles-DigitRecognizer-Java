@@ -155,7 +155,7 @@ public class NeuralNetworkBoosted {
 
 
 
-        int epochs = 60;
+        int epochs = 80;
         int numInputs = 784;
         int numOutputs = 10;
         double learningRate = 0.001;
@@ -188,39 +188,6 @@ public class NeuralNetworkBoosted {
             System.out.println("True Label: Label " + trueLabelIndex);
             System.out.println("--------------");
         }
-
-
-        //DrawingBoard board = new DrawingBoard();
-
-
-
-
-
-
-
-
-
-        DrawingFrame frame = new DrawingFrame();
-
-        SwingUtilities.invokeLater(() -> {
-            frame.setVisible(true);
-        });
-
-        while (DrawingFrame.data_created == null) {
-            try {
-                Thread.sleep(100); // Wait for 100ms before checking again
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-
-
-        
-
-
-
-
     }
 
 }
