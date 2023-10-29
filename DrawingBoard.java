@@ -21,7 +21,7 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
     private Image image;
     private Graphics2D graphics;
     private int prevX, prevY;
-    private int paintBrushSize = 30;
+    private int paintBrushSize = 50;
     private JButton clearButton;
     private JButton predictButton;
     private JFrame frame;
@@ -85,19 +85,24 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
             return;
         }
 
-        int[][] grayscaleData = new int[height][width];
+        int[][] colorData = new int[height][width];
+
         for (int row = 0; row < height; row++) {
             for (int col = 0; col < width; col++) {
                 int pixelValue = pixelData[row * width + col];
                 int red = (pixelValue >> 16) & 0xff;
                 int green = (pixelValue >> 8) & 0xff;
                 int blue = pixelValue & 0xff;
-                int grayscaleValue = (int) (0.299 * red + 0.587 * green + 0.114 * blue);
-                grayscaleData[row][col] = 255 - grayscaleValue; // Inverse car 0 est noir et 255 est blanc
+
+                if (red < 128 && green < 128 && blue < 128) {
+                    colorData[row][col] = 255;  // Blanc
+                } else {
+                    colorData[row][col] = 0;  // Noir
+                }
             }
         }
 
-        int[][] normalizedData = normalisation(grayscaleData);
+        int[][] normalizedData = normalisation(colorData);
 
 
         // Afficher l'image normalisée
