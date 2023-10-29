@@ -29,7 +29,9 @@ import java.util.List;
 
 
 public class NeuralNetworkBoosted {
-    private MultiLayerNetwork model;
+
+    public MultiLayerNetwork model;
+
 
     public NeuralNetworkBoosted(int numInputs, int numOutputs, double learningRate) {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -153,7 +155,7 @@ public class NeuralNetworkBoosted {
 
 
 
-        int epochs = 5;
+        int epochs = 60;
         int numInputs = 784;
         int numOutputs = 10;
         double learningRate = 0.001;
@@ -166,7 +168,7 @@ public class NeuralNetworkBoosted {
 
 
 
-        neuralNetwork.train(X, Y, epochs, learningRate, displayInterval);
+        neuralNetwork.train(augmentedX, Y, epochs, learningRate, displayInterval);
 
 
 
@@ -181,7 +183,8 @@ public class NeuralNetworkBoosted {
             int trueLabelIndex = YTestPerf.getInt(i);  // Assuming the labels are stored as integers
 
             System.out.println("Sample " + (i+1) + ":");
-            System.out.println("Predicted: " + prediction);
+            System.out.println("Predicted: ");
+            System.out.println(prediction);
             System.out.println("True Label: Label " + trueLabelIndex);
             System.out.println("--------------");
         }

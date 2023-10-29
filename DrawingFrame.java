@@ -3,8 +3,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import javax.swing.*;
 import java.awt.*;
-
-
+import java.io.IOException;
 
 
 public class DrawingFrame extends JFrame {
@@ -39,6 +38,11 @@ public class DrawingFrame extends JFrame {
             } else {
                 data_created = data_created.reshape(1, 784);
                 NeuralNetworkBoosted boostedNetwork = new NeuralNetworkBoosted(784, 10, 0.7);
+                try {
+                    boostedNetwork.model = NeuralNetworkBoosted.loadModel("savedmodel/savedmodel1.model");
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
                 String predictions = boostedNetwork.predictWithLabels(data_created);
                 System.out.println(predictions);
             }

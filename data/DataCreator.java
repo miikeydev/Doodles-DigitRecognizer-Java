@@ -133,7 +133,7 @@ public class DataCreator {
 
         Random rand = new Random();
 
-        double angleInDegrees = 1 + rand.nextDouble() * 36;
+        double angleInDegrees = 1 + rand.nextDouble() * 38;
         double angleInRadians = Math.toRadians(angleInDegrees);
 
         int width = (int) image.shape()[0];
