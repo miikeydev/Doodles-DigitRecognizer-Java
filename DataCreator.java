@@ -30,14 +30,15 @@ public class DataCreator {
         INDArray zoomedImage = zoom(originalImage);
         INDArray translatedImage = translate(zoomedImage);
         INDArray rotatedImage = rotate(translatedImage);
+        INDArray noisyImage = addNoise(rotatedImage, 0.07);
+
 
         // Reshape the final transformed image back to 1x784 before returning
-        return rotatedImage.reshape(1, 784);
+        return noisyImage.reshape(1, 784);
     }
 
 
     //-------------------------ZOOM---------------------------------------------------------------
-
 
 
     private static double bilinearInterpolateZ(INDArray image, double x, double y) {
@@ -110,7 +111,6 @@ public class DataCreator {
     }
 
 
-
     //-------------------------ROTATION---------------------------------------------------------------
 
     private static double interpolateR(double val1, double val2, double fraction) {
@@ -162,4 +162,38 @@ public class DataCreator {
 
         return output;
     }
+
+    //----------------------- NOISE ---------------------------------------------
+
+
+    private static INDArray addNoise(INDArray image, double rate) {
+        int rows = 28;
+        int cols = 28;
+        Random rand = new Random();
+
+        // Count the number of zero pixels
+        int zeroCount = 0;
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                if (image.getDouble(i, j) == 0) {
+                    zeroCount++;
+                }
+            }
+        }
+
+        // Calculate how many zero pixels to fill based on the given rate
+        int pixelsToFill = (int) (rate * zeroCount);
+
+        while (pixelsToFill > 0) {
+            int randomRow = rand.nextInt(rows);
+            int randomCol = rand.nextInt(cols);
+            if (image.getDouble(randomRow, randomCol) == 0) {
+                image.putScalar(new int[]{randomRow, randomCol}, rand.nextDouble());
+                pixelsToFill--;
+            }
+        }
+
+        return image;
+    }
+
 }

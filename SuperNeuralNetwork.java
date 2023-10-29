@@ -130,7 +130,6 @@ public class SuperNeuralNetwork {
 
         INDArray[] data = DataConverter.convertToINDArrays(trainData);
 
-
         INDArray X = data[0];
         INDArray augmentedX = DataCreator.augmentData(X);
 

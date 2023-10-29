@@ -35,10 +35,12 @@ public class ImageDisplay {
         frame.add(label);
         frame.setVisible(true);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+
     }
 
     public static void main(String[] args) {
-        List<Image_> images = new DataReader().readData("data/train.csv");
+        List<Image_> images = new DataReader().readData("src/resources/train.csv");
         List<Image_> trainData = new ArrayList<>(images.subList(1000, images.size()));
         trainData.forEach(Image_::normalize);
 
@@ -53,7 +55,10 @@ public class ImageDisplay {
         }
 
         // Augment the images
+        double angleInDegrees = 45.0; // L'angle de rotation souhaité
+        double zoomFactor = 2.0; // Le facteur de zoom souhaité
         INDArray augmentedImageData = DataCreator.augmentData(imageData);
+
 
 
 

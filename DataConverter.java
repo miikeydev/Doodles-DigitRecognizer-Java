@@ -8,8 +8,6 @@ import java.util.List;
 
 public class DataConverter {
 
-
-
     public static INDArray[] convertToINDArrays(List<Image_> images) {
         int numImages = images.size();
         int numRows = images.get(0).getData().length;
@@ -35,14 +33,6 @@ public class DataConverter {
             // Assign label data to Y
             Y.putScalar(new int[]{i, 0}, label);
         }
-
-        // In your DataConverter class
-        INDArray[] dataArrays = DataConverter.convertToINDArrays(images);
-        System.out.println("Sample input data:");
-        System.out.println(dataArrays[0].getRow(0)); // Display the first row of input data
-        System.out.println("Sample labels:");
-        System.out.println(dataArrays[1].getRow(0)); // Display the first row of labels
-
 
         return new INDArray[]{X, Y};
     }
