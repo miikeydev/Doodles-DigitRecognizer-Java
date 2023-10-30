@@ -21,7 +21,7 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
     private Image image;
     private Graphics2D graphics;
     private int prevX, prevY;
-    private int paintBrushSize = 50;
+    private int paintBrushSize = 35;
     private JButton clearButton;
     private JButton predictButton;
     private JFrame frame;
@@ -89,6 +89,7 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
 
         for (int row = 0; row < height; row++) {
             for (int col = 0; col < width; col++) {
+                // Convert 2D coordinates (row, col) to 1D index in array representing the image
                 int pixelValue = pixelData[row * width + col];
                 int red = (pixelValue >> 16) & 0xff;
                 int green = (pixelValue >> 8) & 0xff;
@@ -105,7 +106,7 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
         int[][] normalizedData = normalisation(colorData);
 
 
-        // Afficher l'image normalisée
+        // print normalized image
         new ImageWindow(normalizedData);
 
         int totalSize = normalizedData.length * normalizedData[0].length;
@@ -127,24 +128,21 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
         System.out.println(predictions);
     }
 
-    public int[][] normalisation(int[][] grayscaleData) {
-        // Convertissez les données en niveaux de gris en une Matrice OpenCV
-        Mat mat = new Mat(grayscaleData.length, grayscaleData[0].length, CvType.CV_8U);
-        for (int row = 0; row < grayscaleData.length; row++) {
-            for (int col = 0; col < grayscaleData[0].length; col++) {
-                mat.put(row, col, grayscaleData[row][col]);
+    public int[][] normalisation(int[][] BWData) {
+
+        Mat mat = new Mat(BWData.length, BWData[0].length, CvType.CV_8U);
+        for (int row = 0; row < BWData.length; row++) {
+            for (int col = 0; col < BWData[0].length; col++) {
+                mat.put(row, col, BWData[row][col]);
             }
         }
 
-        // Redimensionnez la matrice à 28x28 avec anti-aliasing
         Mat resizedMat = new Mat();
         Imgproc.resize(mat, resizedMat, new Size(28, 28), 0, 0, Imgproc.INTER_AREA);
 
-        // Appliquez une opération de seuillage pour obtenir une image binaire
         Mat binaryMat = new Mat();
         Imgproc.threshold(resizedMat, binaryMat, 128, 255, Imgproc.THRESH_BINARY);
 
-        // Convertissez la matrice binaire en un tableau 2D
         int[][] resizedData = new int[28][28];
         for (int row = 0; row < 28; row++) {
             for (int col = 0; col < 28; col++) {
@@ -190,7 +188,7 @@ class ImageWindow extends JFrame {
     public ImageWindow(int[][] normalizedData) {
         this.normalizedData = normalizedData;
         setTitle("Normalized Image");
-        setSize(280, 280);  // Chaque pixel sera affiché comme un carré de 10x10 pixels
+        setSize(240, 257);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setVisible(true);
     }
@@ -202,7 +200,11 @@ class ImageWindow extends JFrame {
             for (int col = 0; col < 28; col++) {
                 int value = normalizedData[row][col];
                 g.setColor(new Color(value, value, value));
-                g.fillRect(col * 10 + 10, row * 10 + 30, 10, 10);  // Ajustement pour les bordures de la fenêtre
+                int size = 8;
+                int offsetX = 8;
+                int offsetY = 25;
+                g.fillRect(col * size + offsetX, row * size + offsetY, size, size);
+
             }
         }
     }
