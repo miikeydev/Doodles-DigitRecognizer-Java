@@ -2,8 +2,10 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.PixelGrabber;
 import java.io.IOException;
+import java.util.TimerTask;
 import javax.swing.*;
-import javax.swing.Timer;
+import java.util.Timer;
+
 
 
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -29,6 +31,11 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
     private JFrame frame;
     private JTextArea predictionDisplay = new JTextArea(11, 10);
 
+    private final Timer predictionDebounceTimer = new Timer();
+
+    private TimerTask predictionDebounceTimerTask;
+
+    private long debounceDelay = 1000; // 1 second debounce delay
 
     public DrawingBoard() {
         addMouseListener(this);
@@ -36,16 +43,6 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
         setPreferredSize(new Dimension(600, 600));
         setBackground(Color.WHITE);
         initializeFrame();
-
-        // Create the Timer inside the constructor
-        javax.swing.Timer predictionTimer = new javax.swing.Timer(500, e -> {
-            try {
-                predict();
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        });
-        predictionTimer.start();
     }
 
 
@@ -133,7 +130,7 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
         input.divi(255.0);
 
         NeuralNetworkBoosted boostedNetwork = new NeuralNetworkBoosted(784, 10, 0.001);
-        boostedNetwork.model = NeuralNetworkBoosted.loadModel("savedmodel/doodlesBias.model");
+        boostedNetwork.model = NeuralNetworkBoosted.loadModel("savedmodel/savedmodel1.model");
         String predictions = boostedNetwork.predictWithLabels(input);
         predictionDisplay.setText(predictions);
     }
@@ -178,7 +175,27 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
         repaint();
         prevX = x;
         prevY = y;
+
+        // If the timer task is already scheduled, cancel it
+        if (predictionDebounceTimerTask != null) {
+            predictionDebounceTimerTask.cancel();
+        }
+
+        predictionDebounceTimerTask = new TimerTask() {
+            @Override
+            public void run() {
+                try {
+                    predict();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        };
+
+        predictionDebounceTimer.schedule(predictionDebounceTimerTask, debounceDelay);
     }
+
+
 
     // Unused methods
     public void mouseReleased(MouseEvent e) {}
