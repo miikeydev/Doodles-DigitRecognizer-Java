@@ -3,6 +3,8 @@ import java.awt.event.*;
 import java.awt.image.PixelGrabber;
 import java.io.IOException;
 import javax.swing.*;
+import javax.swing.Timer;
+
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -21,10 +23,12 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
     private Image image;
     private Graphics2D graphics;
     private int prevX, prevY;
-    private int paintBrushSize = 35;
+    private int paintBrushSize = 25;
     private JButton clearButton;
     private JButton predictButton;
     private JFrame frame;
+    private JTextArea predictionDisplay = new JTextArea(11, 10);
+
 
     public DrawingBoard() {
         addMouseListener(this);
@@ -32,29 +36,35 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
         setPreferredSize(new Dimension(600, 600));
         setBackground(Color.WHITE);
         initializeFrame();
+
+        // Create the Timer inside the constructor
+        javax.swing.Timer predictionTimer = new javax.swing.Timer(500, e -> {
+            try {
+                predict();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        });
+        predictionTimer.start();
     }
+
 
     private void initializeFrame() {
         frame = new JFrame("Drawing Board");
         frame.add(this, BorderLayout.CENTER);
         clearButton = new JButton("Clear");
         clearButton.addActionListener(e -> clear());
-        predictButton = new JButton("Predict");
-        predictButton.addActionListener(e -> {
-            try {
-                predict();
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
-        });
         JPanel buttonPanel = new JPanel();
         buttonPanel.add(clearButton);
-        buttonPanel.add(predictButton);
+        predictionDisplay.setEditable(false);
+        frame.add(new JScrollPane(predictionDisplay), BorderLayout.EAST);
         frame.add(buttonPanel, BorderLayout.SOUTH);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(600, 600);
+        frame.setSize(700, 600);
         frame.setVisible(true);
+
     }
+
 
     protected void paintComponent(Graphics g) {
         if (image == null) {
@@ -107,7 +117,7 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
 
 
         // print normalized image
-        new ImageWindow(normalizedData);
+        //new ImageWindow(normalizedData);
 
         int totalSize = normalizedData.length * normalizedData[0].length;
         int[] oneDArray = new int[totalSize];
@@ -123,9 +133,9 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
         input.divi(255.0);
 
         NeuralNetworkBoosted boostedNetwork = new NeuralNetworkBoosted(784, 10, 0.001);
-        boostedNetwork.model = NeuralNetworkBoosted.loadModel("savedmodel/savedmodel1.model");
+        boostedNetwork.model = NeuralNetworkBoosted.loadModel("savedmodel/doodlesBias.model");
         String predictions = boostedNetwork.predictWithLabels(input);
-        System.out.println(predictions);
+        predictionDisplay.setText(predictions);
     }
 
     public int[][] normalisation(int[][] BWData) {
@@ -182,30 +192,6 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
     }
 }
 
-class ImageWindow extends JFrame {
-    private int[][] normalizedData;
 
-    public ImageWindow(int[][] normalizedData) {
-        this.normalizedData = normalizedData;
-        setTitle("Normalized Image");
-        setSize(240, 257);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setVisible(true);
-    }
 
-    @Override
-    public void paint(Graphics g) {
-        super.paint(g);
-        for (int row = 0; row < 28; row++) {
-            for (int col = 0; col < 28; col++) {
-                int value = normalizedData[row][col];
-                g.setColor(new Color(value, value, value));
-                int size = 8;
-                int offsetX = 8;
-                int offsetY = 25;
-                g.fillRect(col * size + offsetX, row * size + offsetY, size, size);
 
-            }
-        }
-    }
-}
