@@ -1,27 +1,24 @@
 package DrawingApp;
 
-
 import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
-import java.util.TimerTask;
 import javax.swing.*;
 import java.util.Timer;
-
+import java.util.TimerTask;
 
 public class DrawingBoard extends JPanel implements MouseListener, MouseMotionListener {
 
     private Image image;
     private Graphics2D graphics;
     private int prevX, prevY;
-    private int paintBrushSize = 25;
+    private int paintBrushSize = 50;
     private JButton clearButton;
     private JFrame frame;
-    private JTextArea predictionDisplay = new JTextArea(20, 20);
-    private final Timer predictionDebounceTimer = new Timer();
+    private PredictionHandler predictionHandler;
+    private PredictionPanel predictionPanel;
+    private Timer predictionDebounceTimer = new Timer();
     private TimerTask predictionDebounceTimerTask;
-    private long debounceDelay = 1; // 1 second debounce delay
-
 
     public DrawingBoard() {
         addMouseListener(this);
@@ -30,14 +27,11 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
         setPreferredSize(new Dimension(600, 600));
         setBackground(Color.WHITE);
 
-        // Adjusting the predictionDisplay JTextArea
-        predictionDisplay = new JTextArea(20, 15);
-        Font newFont = new Font("Arial", Font.BOLD, 16);
-        predictionDisplay.setFont(newFont);
+        predictionHandler = new PredictionHandler();
+        predictionPanel = new PredictionPanel();
 
         initializeFrame();
     }
-
 
     private void initializeFrame() {
         frame = new JFrame("Drawing Board");
@@ -51,22 +45,12 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
         buttonPanel.add(clearButton);
         frame.add(buttonPanel, BorderLayout.SOUTH);
 
-        predictionDisplay.setEditable(false);
-        JScrollPane scrollPane = new JScrollPane(predictionDisplay);
-
-
-        JPanel predictionPanel = new JPanel();
-        predictionPanel.setLayout(new BorderLayout());
-        predictionPanel.add(scrollPane, BorderLayout.CENTER);
-        predictionPanel.setPreferredSize(new Dimension(250, 600));
-
         frame.add(predictionPanel, BorderLayout.EAST);
 
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(900, 700);
+        frame.setSize(1000, 900);
         frame.setVisible(true);
     }
-
 
     protected void paintComponent(Graphics g) {
         if (image == null) {
@@ -85,7 +69,6 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
         repaint();
     }
 
-
     public void mousePressed(MouseEvent e) {
         prevX = e.getX();
         prevY = e.getY();
@@ -94,46 +77,43 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
     public void mouseDragged(MouseEvent e) {
         int x = e.getX();
         int y = e.getY();
+
         graphics.setStroke(new BasicStroke(paintBrushSize, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         graphics.drawLine(prevX, prevY, x, y);
         repaint();
         prevX = x;
         prevY = y;
 
-        // If the timer task is already scheduled, cancel it
+        schedulePredictionWithDebounce();
+    }
+
+    public void mouseReleased(MouseEvent e) {
+        schedulePredictionWithDebounce();
+    }
+
+    private void schedulePredictionWithDebounce() {
         if (predictionDebounceTimerTask != null) {
             predictionDebounceTimerTask.cancel();
+            predictionDebounceTimer.purge();
         }
 
         predictionDebounceTimerTask = new TimerTask() {
             @Override
             public void run() {
                 try {
-                    // Pass the width and height to the predict method
-                    PredictionHandler Predict = new PredictionHandler();
-                    Predict.predict(image, getWidth(), getHeight(), predictionDisplay);
+                    predictionHandler.predict(image, getWidth(), getHeight(), predictionPanel);
                 } catch (IOException ex) {
                     ex.printStackTrace();
                 }
             }
         };
 
-        predictionDebounceTimer.schedule(predictionDebounceTimerTask, debounceDelay);
+        predictionDebounceTimer.schedule(predictionDebounceTimerTask, 500);
     }
 
-
-    public void mouseReleased(MouseEvent e) {
-    }
-
-    public void mouseExited(MouseEvent e) {
-    }
-
-    public void mouseEntered(MouseEvent e) {
-    }
-
-    public void mouseClicked(MouseEvent e) {
-    }
-
-    public void mouseMoved(MouseEvent e) {
-    }
+    // The remaining mouse event methods are unchanged
+    public void mouseExited(MouseEvent e) { }
+    public void mouseEntered(MouseEvent e) { }
+    public void mouseClicked(MouseEvent e) { }
+    public void mouseMoved(MouseEvent e) { }
 }
