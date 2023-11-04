@@ -3,6 +3,8 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.IOException;
+
 
 public class DrawingFrame extends JFrame {
     DrawingPanel drawingPanel;
@@ -10,7 +12,7 @@ public class DrawingFrame extends JFrame {
 
     public DrawingFrame() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(600, 600);
+
         setLayout(new BorderLayout());
 
         drawingPanel = new DrawingPanel();
@@ -25,20 +27,32 @@ public class DrawingFrame extends JFrame {
 
         JButton retrieveDataButton = new JButton("Retrieve Data");
         retrieveDataButton.addActionListener(e -> {
-            data_created = getDrawingData();
+            data_created = getDrawingData(false);
             System.out.println("The Data: " + data_created);
 
-            NeuralNetwork nn = new NeuralNetwork();
-            nn.testPredict(data_created); // Call test method directly here
+            long[] shape = data_created.shape();
+
+            if (shape.length == 2){
+                NeuralNetwork nn = new NeuralNetwork();
+                nn.testPredict(data_created); // Call test method directly here
+            } else {
+                data_created = data_created.reshape(1, 784);
+                NeuralNetworkBoosted boostedNetwork = new NeuralNetworkBoosted(784, 10, 0.7);
+                try {
+                    boostedNetwork.model = NeuralNetworkBoosted.loadModel("savedmodel/savedmodel1.model");
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+                String predictions = boostedNetwork.predictWithLabels(data_created);
+                System.out.println(predictions);
+            }
         });
         buttonPanel.add(retrieveDataButton);
 
         pack();
-
-        pack();
     }
 
-    public INDArray getDrawingData() {
+    public INDArray getDrawingData(boolean is2D) {
         int[][] pixels = drawingPanel.getPixels();
         float[] normalizedPixels = new float[784];
         int idx = 0;
@@ -49,15 +63,24 @@ public class DrawingFrame extends JFrame {
             }
         }
 
-        // Creating a 2D INDArray of shape [784, 1] by reshaping
-        INDArray array2D = Nd4j.createFromArray(normalizedPixels).reshape(784, 1);
+        INDArray array;
+
+        if (is2D) {
+            // Creating a 2D INDArray of shape [1, 784] by reshaping
+            array = Nd4j.createFromArray(normalizedPixels).reshape(1, 784);
+            array = array.transpose();
+        } else {
+            // Keeping it as 1D with shape 784
+            array = Nd4j.createFromArray(normalizedPixels);
+        }
 
         // Displaying the shape of the array
-        long[] shape = array2D.shape();
-        System.out.println("Shape of INDArray: [" + shape[0] + ", " + shape[1] + "]");
+        long[] shape = array.shape();
+        System.out.println("Shape of INDArray: [" + shape[0] + (shape.length > 1 ? ", " + shape[1] : "") + "]");
 
-        return array2D;
+        return array;
     }
+
 
 
 
@@ -79,7 +102,5 @@ public class DrawingFrame extends JFrame {
                 e.printStackTrace();
             }
         }
-        System.out.println("Data in main method. INDArray length: " + data_created.length());
-        System.out.println("The Data: " + data_created);
     }
 }

@@ -1,6 +1,8 @@
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
+
+
 import java.awt.image.BufferedImage;
 import javax.swing.*;
 import java.awt.*;
@@ -11,7 +13,7 @@ public class NeuralNetwork {
     private INDArray W1, b1, W2, b2;
     private double learningRate = 0.01;
     private int numInputs = 784;
-    private int numHidden = 10;
+    private int numHidden = 100;
     private int numOutputs = 10;
 
     public NeuralNetwork() {
@@ -221,6 +223,7 @@ public class NeuralNetwork {
         INDArray singleSample = XT.getColumn(index).reshape(1, XT.rows());
         INDArray singleSampleT = singleSample.transpose();
 
+
         // Making predictions
         INDArray[] forwardPropResults = forwardProp(singleSampleT);
         INDArray A2 = forwardPropResults[3];
@@ -237,6 +240,13 @@ public class NeuralNetwork {
         BufferedImage img = toBufferedImage(singleSample);
         displayImage(img);
     }
+
+
+
+
+
+
+
 
 }
 
