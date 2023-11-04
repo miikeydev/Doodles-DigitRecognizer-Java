@@ -72,11 +72,25 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
     public void mousePressed(MouseEvent e) {
         prevX = e.getX();
         prevY = e.getY();
+
+        // Check if the right mouse button was pressed
+        if (SwingUtilities.isRightMouseButton(e)) {
+            graphics.setPaint(Color.WHITE); // Set the paint color to white for the eraser
+        } else {
+            graphics.setPaint(Color.BLACK); // Set the paint color to black for drawing
+        }
     }
 
     public void mouseDragged(MouseEvent e) {
         int x = e.getX();
         int y = e.getY();
+
+        // Check which button is being dragged
+        if (SwingUtilities.isRightMouseButton(e)) {
+            graphics.setPaint(Color.WHITE); // Use white color to erase
+        } else {
+            graphics.setPaint(Color.BLACK); // Use black color to draw
+        }
 
         graphics.setStroke(new BasicStroke(paintBrushSize, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         graphics.drawLine(prevX, prevY, x, y);
