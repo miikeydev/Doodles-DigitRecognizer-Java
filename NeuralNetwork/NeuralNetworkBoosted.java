@@ -167,7 +167,7 @@ public class NeuralNetworkBoosted {
 
     public static void main(String[] args) throws IOException {
 
-        List<Image_> images = new DataReader().readData("src/resources/doodles.csv");
+        List<Image_> images = new DataReader().readData("data/doodles1.csv");
         Collections.shuffle(images);
 
 
@@ -200,7 +200,7 @@ public class NeuralNetworkBoosted {
 
 
         NeuralNetworkBoosted neuralNetwork = new NeuralNetworkBoosted(numInputs, numOutputs, learningRate); // This will initialize a new model
-        neuralNetwork.model = NeuralNetworkBoosted.loadModel("src/savedmodel/doodlesBias.model"); // Load the pre-trained model into the 'model' field of the object
+        neuralNetwork.model = NeuralNetworkBoosted.loadModel("savedmodel/doodlesBias.model"); // Load the pre-trained model into the 'model' field of the object
         neuralNetwork.model.setListeners(new ScoreIterationListener(1));
 
 
@@ -210,7 +210,7 @@ public class NeuralNetworkBoosted {
 
 
 
-        neuralNetwork.saveModel("src/savedmodel/doodlesBias.model");
+        neuralNetwork.saveModel("savedmodel/doodlesBias.model");
 
 
         for (int i = 0; i < 10; i++) {

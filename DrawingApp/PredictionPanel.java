@@ -1,20 +1,18 @@
 package DrawingApp;
-import java.util.ArrayList;
+
 import javax.swing.*;
 import java.awt.*;
 
 public class PredictionPanel extends JPanel {
-    private java.util.List<Integer> predictions; // Ajoutez cette ligne pour stocker les prédictions
 
     private static final int NUMBER_OF_PREDICTIONS = 10; // Assuming 10 classes for the prediction
     private java.util.List<JLabel> predictionLabels;
     private static final String[] LABEL_NAMES = {
-            //"Angel", "Apple", "Axe", "Book", "Helicopter","Moon", "Mushroom", "Octopus", "Pants", "Pencil"
-            "Zero","One", "Two", "Three", "Four", "Five", "Six", "Seven", "Height", "Nine"
+            "Angel", "Apple", "Axe", "Book", "Helicopter","Moon", "Mushroom", "Octopus", "Pants", "Pencil"
+            //"Zero","One", "Two", "Three", "Four", "Five", "Six", "Seven", "Height", "Nine"
     };
 
     public PredictionPanel() {
-        predictions = new ArrayList<>(NUMBER_OF_PREDICTIONS);
         // Adjust the GridLayout to have more space horizontally for each label
         setLayout(new GridLayout(NUMBER_OF_PREDICTIONS, 1, 5, 5)); // Arrange labels in a column
         predictionLabels = new java.util.ArrayList<>(NUMBER_OF_PREDICTIONS);
@@ -54,7 +52,5 @@ public class PredictionPanel extends JPanel {
         // Convert HSV to RGB
         return Color.getHSBColor(hue, saturation, value);
     }
-
-
 
 }

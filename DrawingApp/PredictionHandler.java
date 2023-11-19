@@ -21,14 +21,14 @@ public class PredictionHandler {
 
     private JTextArea predictionDisplay = new JTextArea(20, 20);
 
-    public double[] predict(Image image, int width, int height, PredictionPanel predictionPanel) throws IOException {
+    public void predict(Image image, int width, int height, PredictionPanel predictionPanel) throws IOException {
         int[] pixelData = new int[width * height];
         PixelGrabber pixelGrabber = new PixelGrabber(image, 0, 0, width, height, pixelData, 0, width);
         try {
             pixelGrabber.grabPixels();
         } catch (InterruptedException e) {
             System.err.println("Interrupted waiting for pixels!");
-            return new double[0];
+            return;
         }
 
         int[][] colorData = new int[height][width];
@@ -64,12 +64,11 @@ public class PredictionHandler {
         input.divi(255.0);
 
         NeuralNetworkBoosted boostedNetwork = new NeuralNetworkBoosted(784, 10, 0.001);
-        boostedNetwork.model = NeuralNetworkBoosted.loadModel("src/savedmodel/savedmodel2.model");
+        boostedNetwork.model = NeuralNetworkBoosted.loadModel("src/savedmodel/doodlesBias.model");
         INDArray predictions = boostedNetwork.labelAndPercentage(input); // predictions is an 2D IND array with label and predictions
         double[] predictionsPercentages = extractPercentagesFromPredictions(predictions);
         // Now update the prediction panel with these percentages
         predictionPanel.setPredictions(predictionsPercentages);
-        return predictionsPercentages;
     }
 
 

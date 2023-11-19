@@ -11,6 +11,7 @@ public class DrawingApp {
                 e.printStackTrace();
             }
             new DrawingBoard();
+
         });
     }
 }

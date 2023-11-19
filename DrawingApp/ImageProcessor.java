@@ -42,7 +42,7 @@ public class ImageProcessor {
         System.out.println("Reshaped Shape: " + java.util.Arrays.toString(reshapedShape));
 
         NeuralNetworkBoosted boostedNetwork = new NeuralNetworkBoosted(784, 10, 0.7);
-        boostedNetwork.model = NeuralNetworkBoosted.loadModel("src/savedmodel/savedmodel1.model");
+        boostedNetwork.model = NeuralNetworkBoosted.loadModel("savedmodel/savedmodel1.model");
         String predictions = boostedNetwork.predictWithLabels(reshapedArray);
         System.out.println(predictions);
     }
