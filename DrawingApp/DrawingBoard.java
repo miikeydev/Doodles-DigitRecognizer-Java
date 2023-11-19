@@ -1,5 +1,7 @@
 package DrawingApp;
 
+import NeuralNetwork.NeuralNetworkBoosted;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
@@ -55,7 +57,7 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
 
 
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(1500, 800);
+        frame.setSize(1600, 800);
         frame.setVisible(true);
     }
 
@@ -122,7 +124,7 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
             @Override
             public void run() {
                 try {
-                    predictionHandler.predict(image, getWidth(), getHeight(), predictionPanel);
+                    predictionHandler.predict(image, getWidth(), getHeight(), predictionPanel, panelChoice);
                 } catch (IOException ex) {
                     ex.printStackTrace();
                 }
