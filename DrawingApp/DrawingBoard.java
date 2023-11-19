@@ -19,8 +19,7 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
     private PredictionPanel predictionPanel;
     private Timer predictionDebounceTimer = new Timer();
     private TimerTask predictionDebounceTimerTask;
-    
-    private InstructionPanel instructionPanel;
+    private ChoicePanel panelChoice;
 
     public DrawingBoard() {
         addMouseListener(this);
@@ -31,7 +30,8 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
 
         predictionHandler = new PredictionHandler();
         predictionPanel = new PredictionPanel();
-        instructionPanel = new InstructionPanel();
+        panelChoice = new ChoicePanel();
+
 
         initializeFrame();
     }
@@ -50,10 +50,12 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
 
         frame.add(predictionPanel, BorderLayout.EAST);
 
-        frame.add(instructionPanel, BorderLayout.WEST);
+        frame.add(panelChoice, BorderLayout.WEST);
+
+
 
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(1400, 800);
+        frame.setSize(1500, 800);
         frame.setVisible(true);
     }
 

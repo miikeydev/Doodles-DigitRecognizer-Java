@@ -8,8 +8,8 @@ public class PredictionPanel extends JPanel {
     private static final int NUMBER_OF_PREDICTIONS = 10; // Assuming 10 classes for the prediction
     private java.util.List<JLabel> predictionLabels;
     private static final String[] LABEL_NAMES = {
-            //"Angel", "Apple", "Axe", "Book", "Helicopter","Moon", "Mushroom", "Octopus", "Pants", "Pencil"
-            "Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Height", "Nine"
+            "Angel", "Apple", "Axe", "Book", "Helicopter","Moon", "Mushroom", "Octopus", "Pants", "Pencil"
+            //"Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Height", "Nine"
     };
 
     public PredictionPanel() {
