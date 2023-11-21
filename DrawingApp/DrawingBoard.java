@@ -1,13 +1,13 @@
 package DrawingApp;
 
+import NeuralNetwork.NeuralNetworkBoosted;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
 import javax.swing.*;
 import java.util.Timer;
 import java.util.TimerTask;
-
-
 
 public class DrawingBoard extends JPanel implements MouseListener, MouseMotionListener {
 
@@ -22,7 +22,6 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
     private Timer predictionDebounceTimer = new Timer();
     private TimerTask predictionDebounceTimerTask;
     private ChoicePanel panelChoice;
-
 
     public DrawingBoard() {
         addMouseListener(this);
@@ -58,11 +57,19 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
 
 
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(1500, 800);
+        frame.setSize(1600, 800);
         frame.setVisible(true);
     }
 
-
+    protected void paintComponent(Graphics g) {
+        if (image == null) {
+            image = createImage(getWidth(), getHeight());
+            graphics = (Graphics2D) image.getGraphics();
+            graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            clear();
+        }
+        g.drawImage(image, 0, 0, null);
+    }
 
     public void clear() {
         graphics.setPaint(Color.WHITE);
@@ -75,11 +82,10 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
         prevX = e.getX();
         prevY = e.getY();
 
-        // Check if the right mouse button was pressed
-        if (SwingUtilities.isRightMouseButton(e)) {
-            graphics.setPaint(Color.WHITE); // Set the paint color to white for the eraser
+        if (panelChoice.getMyTimer() != null && panelChoice.getMyTimer().isRunning()) {
+            graphics.setPaint(Color.BLACK);
         } else {
-            graphics.setPaint(Color.BLACK); // Set the paint color to black for drawing
+            graphics.setPaint(Color.WHITE);
         }
     }
 
@@ -88,10 +94,10 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
         int y = e.getY();
 
         // Check which button is being dragged
-        if (SwingUtilities.isRightMouseButton(e)) {
-            graphics.setPaint(Color.WHITE); // Use white color to erase
+        if (panelChoice.getMyTimer() != null && panelChoice.getMyTimer().isRunning()) {
+            graphics.setPaint(Color.BLACK);
         } else {
-            graphics.setPaint(Color.BLACK); // Use black color to draw
+            graphics.setPaint(Color.WHITE);
         }
 
         graphics.setStroke(new BasicStroke(paintBrushSize, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
@@ -117,7 +123,7 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
             @Override
             public void run() {
                 try {
-                    predictionHandler.predict(image, getWidth(), getHeight(), predictionPanel);
+                    predictionHandler.predict(image, getWidth(), getHeight(), predictionPanel, panelChoice);
                 } catch (IOException ex) {
                     ex.printStackTrace();
                 }

@@ -3,6 +3,7 @@ package DrawingApp;
 import javax.swing.*;
 import java.awt.*;
 
+
 public class PredictionPanel extends JPanel {
 
     private static final int NUMBER_OF_PREDICTIONS = 10; // Assuming 10 classes for the prediction
@@ -36,6 +37,7 @@ public class PredictionPanel extends JPanel {
         // Find the index of the highest prediction
         int maxIndex = 0;
         double maxPrediction = predictions[0];
+
         for (int i = 1; i < predictions.length; i++) {
             if (predictions[i] > maxPrediction) {
                 maxPrediction = predictions[i];
