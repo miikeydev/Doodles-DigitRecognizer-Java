@@ -7,6 +7,8 @@ import javax.swing.*;
 import java.util.Timer;
 import java.util.TimerTask;
 
+
+
 public class DrawingBoard extends JPanel implements MouseListener, MouseMotionListener {
 
     private Image image;
@@ -19,18 +21,19 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
     private PredictionPanel predictionPanel;
     private Timer predictionDebounceTimer = new Timer();
     private TimerTask predictionDebounceTimerTask;
-    private PanelChoice panelChoice;
+    private ChoicePanel panelChoice;
+
 
     public DrawingBoard() {
         addMouseListener(this);
         addMouseMotionListener(this);
 
-        setPreferredSize(new Dimension(500, 500));
+        setPreferredSize(new Dimension(600, 600));
         setBackground(Color.WHITE);
 
         predictionHandler = new PredictionHandler();
         predictionPanel = new PredictionPanel();
-        panelChoice = new PanelChoice();
+        panelChoice = new ChoicePanel();
 
 
         initializeFrame();
@@ -54,21 +57,12 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
 
 
 
-
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(1100, 600);
+        frame.setSize(1500, 800);
         frame.setVisible(true);
     }
 
-    protected void paintComponent(Graphics g) {
-        if (image == null) {
-            image = createImage(getWidth(), getHeight());
-            graphics = (Graphics2D) image.getGraphics();
-            graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            clear();
-        }
-        g.drawImage(image, 0, 0, null);
-    }
+
 
     public void clear() {
         graphics.setPaint(Color.WHITE);
@@ -138,6 +132,4 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
     public void mouseEntered(MouseEvent e) { }
     public void mouseClicked(MouseEvent e) { }
     public void mouseMoved(MouseEvent e) { }
-
-
 }

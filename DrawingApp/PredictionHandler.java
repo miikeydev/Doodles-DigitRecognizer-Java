@@ -67,7 +67,6 @@ public class PredictionHandler {
         boostedNetwork.model = NeuralNetworkBoosted.loadModel("src/savedmodel/doodlesBias.model");
         INDArray predictions = boostedNetwork.labelAndPercentage(input); // predictions is an 2D IND array with label and predictions
         double[] predictionsPercentages = extractPercentagesFromPredictions(predictions);
-        // Now update the prediction panel with these percentages
         predictionPanel.setPredictions(predictionsPercentages);
     }
 
