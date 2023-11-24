@@ -7,58 +7,78 @@ import java.awt.event.ActionListener;
 
 public class TimerPanel extends JPanel {
     private JProgressBar progressBar;
-    private Timer timer; // javax.swing.Timer
+    protected static Timer timer;
     private int timeLeft;
     private int totalTime;
+
+    private TimerListener timerListener;
+
+    public interface TimerListener {
+        void onTimerEnd();
+    }
+
+    public void setTimerListener(TimerListener listener) {
+        this.timerListener = listener;
+    }
 
     public TimerPanel(int totalTimeInSeconds) {
         this.totalTime = totalTimeInSeconds;
         this.timeLeft = totalTimeInSeconds;
         progressBar = new JProgressBar(0, totalTime);
         progressBar.setValue(totalTime);
-        progressBar.setStringPainted(true); // Pour afficher le temps restant sur la barre de progression
+        progressBar.setStringPainted(false);
 
-        // Configure le Timer
-        timer = new Timer(300, new ActionListener() {
+        timer = new Timer(250, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 timeLeft--;
                 progressBar.setValue(timeLeft);
                 if (timeLeft <= 0) {
-                    timer.stop(); // Arrête le javax.swing.Timer
-                    onTimerEnd();
+                    timer.stop();
+                    if (timerListener != null) {
+                        timerListener.onTimerEnd();
+                    }
                 }
             }
         });
-        this.add(progressBar); // Ajoute la barre de progression au JPanel
+        this.add(progressBar);
     }
 
-    // Méthode pour démarrer le Timer
     public void start() {
         timer.start();
     }
 
-    // Méthode pour arrêter le Timer
     public void stop() {
         timer.stop();
     }
 
-    // Méthode appelée lorsque le Timer atteint zéro
-    private void onTimerEnd() {
-        // Actions à effectuer lorsque le timer termine
-        JOptionPane.showMessageDialog(this, "Temps écoulé !");
-    }
-
-    // Méthode pour modifier la couleur de la barre de progression
     public void setProgressBarColor(Color color) {
         progressBar.setForeground(color);
     }
 
-    // Méthode pour modifier la taille de la barre de progression
     public void setProgressBarSize(int width, int height) {
         Dimension size = new Dimension(width, height);
         progressBar.setPreferredSize(size);
         progressBar.setMaximumSize(size);
         progressBar.setMinimumSize(size);
     }
+
+    public boolean isRunning() {
+        System.out.println("Timer isRunning: " + timer.isRunning() + ", Time left: " + timeLeft);
+        return timer.isRunning();
+    }
+
+
+    public String calculateScore() {
+        double percentage = (double) timeLeft / totalTime;
+        int score = (int) (percentage * 100);
+        return Integer.toString(score);
+    }
+
+    public String onTimerEnd() {
+        return "No more time! SCORE : 0";
+    }
+
+
+
 }
