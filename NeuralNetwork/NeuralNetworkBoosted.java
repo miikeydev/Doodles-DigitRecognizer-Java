@@ -4,7 +4,6 @@ import data.DataConverter;
 import data.DataCreator;
 import data.DataReader;
 import data.Image_;
-
 import java.io.File;
 import org.nd4j.linalg.learning.config.Adam;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -21,18 +20,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-
 public class NeuralNetworkBoosted {
-
     public MultiLayerNetwork model;
-
 
     public NeuralNetworkBoosted(int numInputs, int numOutputs, double learningRate) {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -42,30 +36,30 @@ public class NeuralNetworkBoosted {
                 .list()
                 .layer(0, new DenseLayer.Builder()
                         .nIn(numInputs)
-                        .nOut(400) // First hidden layer size
+                        .nOut(400)
                         .activation(Activation.RELU)
                         .weightInit(WeightInit.XAVIER)
                         .build())
-                .layer(1, new DenseLayer.Builder() // Second hidden layer
+                .layer(1, new DenseLayer.Builder()
                         .nIn(400)
-                        .nOut(300) // Reduced size for the second hidden layer
+                        .nOut(300)
                         .activation(Activation.RELU)
                         .weightInit(WeightInit.XAVIER)
                         .build())
-                .layer(2, new DenseLayer.Builder() // Third hidden layer
+                .layer(2, new DenseLayer.Builder()
                         .nIn(300)
-                        .nOut(200) // Further reduced size for the third hidden layer
+                        .nOut(200)
                         .activation(Activation.RELU)
                         .weightInit(WeightInit.XAVIER)
                         .build())
-                .layer(3, new DenseLayer.Builder() // Fourth hidden layer
+                .layer(3, new DenseLayer.Builder()
                         .nIn(200)
-                        .nOut(100) // Further reduced size for the fourth hidden layer
+                        .nOut(100)
                         .activation(Activation.RELU)
                         .weightInit(WeightInit.XAVIER)
                         .build())
                 .layer(4, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        .nIn(100) // Adjusted based on the last hidden layer size
+                        .nIn(100)
                         .nOut(numOutputs)
                         .activation(Activation.SOFTMAX)
                         .weightInit(WeightInit.XAVIER)
@@ -76,8 +70,6 @@ public class NeuralNetworkBoosted {
         model.init();
         model.setListeners(new ScoreIterationListener(1));
     }
-
-
 
     public void train(INDArray input, INDArray labels, int epochs, double learningRate, int displayInterval) {
         DataSet dataSet = new DataSet(input, labels);
@@ -92,7 +84,6 @@ public class NeuralNetworkBoosted {
         }
     }
 
-
     public double evaluateAccuracy(INDArray input, INDArray labels) {
         INDArray predictedOutput = model.output(input);
 
@@ -105,9 +96,6 @@ public class NeuralNetworkBoosted {
         return 100.0 * nCorrect / input.rows();
     }
 
-
-
-
     public static INDArray oneHotEncode(INDArray labels, int numClasses) {
         INDArray encoded = Nd4j.zeros(labels.rows(), numClasses);
 
@@ -119,10 +107,6 @@ public class NeuralNetworkBoosted {
         return encoded;
     }
 
-
-    public INDArray predict(INDArray input) {
-        return model.output(input);
-    }
 
     public String predictWithLabels(INDArray input) {
         INDArray probabilities = model.output(input);
@@ -137,15 +121,10 @@ public class NeuralNetworkBoosted {
 
     public INDArray labelAndPercentage(INDArray input) {
         INDArray probabilities = model.output(input);
-
-        // Create a 2D array with the same number of rows as the number of columns in probabilities
-        // and 2 columns for index and percentage
         INDArray result = Nd4j.create(probabilities.columns(), 2);
 
         for (int i = 0; i < probabilities.columns(); i++) {
-            // Set the index
             result.putScalar(new int[]{i, 0}, i);
-            // Set the percentage
             result.putScalar(new int[]{i, 1}, probabilities.getDouble(i) * 100);
         }
 
@@ -162,14 +141,9 @@ public class NeuralNetworkBoosted {
         return MultiLayerNetwork.load(modelSaveLocation, true);
     }
 
-
-
-
     public static void main(String[] args) throws IOException {
-
         List<Image_> images = new DataReader().readData("data/doodles1.csv");
         Collections.shuffle(images);
-
 
         List<Image_> devData = new ArrayList<>(images.subList(0, 1000));
         List<Image_> trainData = new ArrayList<>(images.subList(1000, images.size()));
@@ -183,7 +157,6 @@ public class NeuralNetworkBoosted {
         INDArray XTestPerf = dataTestPerf[0];
         INDArray YTestPerf = dataTestPerf[1];
 
-
         INDArray X = data[0];
         INDArray augmentedX = DataCreator.augmentData(X);
 
@@ -191,33 +164,26 @@ public class NeuralNetworkBoosted {
         Y = oneHotEncode(Y, 10);
 
 
-
+        // HYPERPARAMETERS
         int epochs = 70;
         int numInputs = 784;
         int numOutputs = 10;
         double learningRate = 0.001;
         int displayInterval = 10;
 
-
-        NeuralNetworkBoosted neuralNetwork = new NeuralNetworkBoosted(numInputs, numOutputs, learningRate); // This will initialize a new model
-        neuralNetwork.model = NeuralNetworkBoosted.loadModel("savedmodel/doodlesBias.model"); // Load the pre-trained model into the 'model' field of the object
+        NeuralNetworkBoosted neuralNetwork = new NeuralNetworkBoosted(numInputs, numOutputs, learningRate);
+        neuralNetwork.model = NeuralNetworkBoosted.loadModel("savedmodel/doodlesBias.model");
         neuralNetwork.model.setListeners(new ScoreIterationListener(1));
-
-
 
         neuralNetwork.train(augmentedX, Y, epochs, learningRate, displayInterval);
 
-
-
-
         neuralNetwork.saveModel("savedmodel/doodlesBias.model");
 
-
         for (int i = 0; i < 10; i++) {
-            INDArray sample = XTestPerf.getRow(i).reshape(1, -1);  // Reshape the sample to [1, 784]
-            String prediction = neuralNetwork.predictWithLabels(sample);  // Get the prediction
+            INDArray sample = XTestPerf.getRow(i).reshape(1, -1);
+            String prediction = neuralNetwork.predictWithLabels(sample);
 
-            int trueLabelIndex = YTestPerf.getInt(i);  // Assuming the labels are stored as integers
+            int trueLabelIndex = YTestPerf.getInt(i);
 
             System.out.println("Sample " + (i+1) + ":");
             System.out.println("Predicted: ");
@@ -226,5 +192,4 @@ public class NeuralNetworkBoosted {
             System.out.println("--------------");
         }
     }
-
 }
