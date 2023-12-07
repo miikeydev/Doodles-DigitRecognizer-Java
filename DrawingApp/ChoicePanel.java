@@ -1,5 +1,7 @@
 package DrawingApp;
 
+import NeuralNetwork.LabelList;
+
 import javax.swing.*;
 import javax.swing.border.Border;
 import java.awt.*;
@@ -45,8 +47,7 @@ public class ChoicePanel extends JPanel implements TimerPanel.TimerListener {
         buttonPanel.setBorder(borderWithGap);
 
         // Names for the rectangles
-        String[] rectangleNames = {"Angel", "Apple", "Axe", "Book", "Helicopter", "Moon", "Mushroom", "Octopus", "Pants", "Pencil"};
-
+        String[] rectangleNames = LabelList.LabelForDoodles;
         for (int i = 0; i < rectangleNames.length; i++) {
             final int chosenIndex = i;
 
