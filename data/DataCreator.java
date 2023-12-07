@@ -10,8 +10,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 
-import java.util.Arrays;
-
 
 public class DataCreator {
 
@@ -183,7 +181,7 @@ public class DataCreator {
         int cols = 28;
         Random rand = new Random();
 
-        // Count the number of zero pixels
+
         int zeroCount = 0;
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
@@ -193,7 +191,7 @@ public class DataCreator {
             }
         }
 
-        // Calculate how many zero pixels to fill based on the given rate
+
         int pixelsToFill = (int) (rate * zeroCount);
 
         while (pixelsToFill > 0) {
@@ -220,15 +218,15 @@ public class DataCreator {
             }
         }
 
-        // Agrandir l'image à 56x56 avec INTER_LINEAR (ou INTER_CUBIC)
+        // Scale up the image to 56x56 with INTER_LINEAR
         Mat enlargedMat = new Mat();
         Imgproc.resize(mat, enlargedMat, new Size(600, 600), 0, 0, Imgproc.INTER_LINEAR);
 
-        // Réduire l'image à 28x28 avec INTER_AREA
+        // Scale down the image to 28x28 with INTER_AREA
         Mat reducedMat = new Mat();
         Imgproc.resize(enlargedMat, reducedMat, new Size(28, 28), 0, 0, Imgproc.INTER_AREA);
 
-        // Convertir Mat en INDArray
+        // Convert Mat to INDArray
         INDArray output = Nd4j.create(28, 28);
         for (int i = 0; i < 28; i++) {
             for (int j = 0; j < 28; j++) {
