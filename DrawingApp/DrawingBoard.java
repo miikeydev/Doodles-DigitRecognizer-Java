@@ -1,7 +1,5 @@
 package DrawingApp;
 
-import NeuralNetwork.NeuralNetworkBoosted;
-
 import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
@@ -45,23 +43,41 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
         frame.setLayout(new BorderLayout());
         frame.add(this, BorderLayout.CENTER);
 
+        ImageIcon icon = new ImageIcon("src/icone/logo.png");
+        frame.setIconImage(icon.getImage());
+
         clearButton = new JButton("Clear");
         clearButton.addActionListener(e -> clear());
 
+        clearButton.setFont(new Font("Arial", Font.PLAIN, 16));
+        clearButton.setBackground(new Color(0x3F3C3C));
+        clearButton.setForeground(Color.WHITE);
+        clearButton.setOpaque(true);
+        clearButton.setBorderPainted(false);
+
+        JLabel eraserLabel = new JLabel(" Right click for eraser");
+        eraserLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        eraserLabel.setForeground(new Color(0x3F3C3C));
+        eraserLabel.setOpaque(true);
+        eraserLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+
+
         JPanel buttonPanel = new JPanel();
         buttonPanel.add(clearButton);
+        buttonPanel.add(eraserLabel);
+
+        buttonPanel.add(Box.createHorizontalStrut(-150));
         frame.add(buttonPanel, BorderLayout.SOUTH);
 
         frame.add(predictionPanel, BorderLayout.EAST);
-
         frame.add(choicePanel, BorderLayout.WEST);
-
-
 
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(1250, 670);
         frame.setVisible(true);
+        frame.setResizable(false);
     }
+
 
     public void setCanDraw(boolean canDraw) {
         this.canDraw = canDraw;
@@ -146,7 +162,6 @@ public class DrawingBoard extends JPanel implements MouseListener, MouseMotionLi
         predictionDebounceTimer.schedule(predictionDebounceTimerTask, 500);
     }
 
-    // The remaining mouse event methods are unchanged
     public void mouseExited(MouseEvent e) { }
     public void mouseEntered(MouseEvent e) { }
     public void mouseClicked(MouseEvent e) { }

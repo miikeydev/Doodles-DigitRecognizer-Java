@@ -21,7 +21,7 @@ public class PredictionPanel extends JPanel {
             label.setOpaque(true);
             label.setHorizontalAlignment(SwingConstants.CENTER);
             label.setPreferredSize(new Dimension(200, 50)); // Adjust the width and height as needed
-            label.setFont(new Font("Roboto", Font.PLAIN, 20));
+            label.setFont(new Font("Arial", Font.PLAIN, 16));
             label.setForeground(Color.WHITE);
 
             predictionLabels.add(label);

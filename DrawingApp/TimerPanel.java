@@ -80,6 +80,13 @@ public class TimerPanel extends JPanel {
         return "No more time! SCORE : 0";
     }
 
+    public void resetTimer() {
+        timeLeft = totalTime;
+        progressBar.setValue(totalTime);
+        this.setVisible(false);
+    }
+
+
 
 
 }

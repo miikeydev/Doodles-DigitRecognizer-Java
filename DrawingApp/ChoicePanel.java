@@ -33,20 +33,19 @@ public class ChoicePanel extends JPanel implements TimerPanel.TimerListener {
     private void addRectangles() {
         JPanel buttonPanel = new JPanel();
 
-        // Create an EmptyBorder with top, left, bottom, and right gaps
         int topGap = 20;
         int leftGap = 20;
         int bottomGap = 20;
         int rightGap = 20;
         Border borderWithGap = BorderFactory.createEmptyBorder(topGap, leftGap, bottomGap, rightGap);
 
-        // Specify the horizontal and vertical gaps in the GridLayout constructor
+
         int hgap = 10;
         int vgap = 10;
         buttonPanel.setLayout(new GridLayout(5, 2, hgap, vgap));
         buttonPanel.setBorder(borderWithGap);
 
-        // Names for the rectangles
+
         String[] rectangleNames = LabelList.LabelForDoodles;
         for (int i = 0; i < rectangleNames.length; i++) {
             final int chosenIndex = i;
@@ -64,31 +63,33 @@ public class ChoicePanel extends JPanel implements TimerPanel.TimerListener {
 
             button.addActionListener(e -> {
                 if (selectedButton != null) {
-
                     selectedButton.setBackground(new Color(0x3F3C3C));
                 }
                 selectedButton = button;
                 selectedButton.setBackground(new Color(0x147A03));
 
                 if (myTimerPanel != null) {
-                    myTimerPanel.stop();
+                    myTimerPanel.resetTimer();
+                } else {
+                    myTimerPanel = new TimerPanel(60);
+                    myTimerPanel.setTimerListener(this);
                 }
-                myTimerPanel = new TimerPanel(60);
-                myTimerPanel.setTimerListener((TimerPanel.TimerListener) this);
                 myTimerPanel.setProgressBarColor(new Color(0x147A03));
                 myTimerPanel.setProgressBarSize(300, 30);
+                myTimerPanel.setVisible(true);
                 myTimerPanel.start();
+
                 ChoicePanel.this.add(myTimerPanel, BorderLayout.NORTH);
                 ChoicePanel.this.revalidate();
                 ChoicePanel.this.repaint();
 
                 drawingBoard.setCanDraw(true);
 
-                // Update the chosenValue variable with the selected word
                 chosenValue = rectangleNames[chosenIndex];
                 intChosenValue = chosenIndex + 1;
                 updateMessage("You should draw " + chosenValue);
             });
+
             buttonPanel.add(button);
         }
         add(buttonPanel, BorderLayout.SOUTH);
@@ -109,7 +110,7 @@ public class ChoicePanel extends JPanel implements TimerPanel.TimerListener {
                 g.fillRect(centerX, centerY, boxWidth, boxHeight);
 
                 g.setColor(Color.WHITE);
-                Font font = new Font("Roboto", Font.PLAIN, 20);
+                Font font = new Font("Arial", Font.PLAIN, 20);
                 g.setFont(font);
 
                 FontMetrics metrics = g.getFontMetrics(font);
@@ -120,7 +121,7 @@ public class ChoicePanel extends JPanel implements TimerPanel.TimerListener {
             }
         };
 
-        // Set the preferred size for the textPanel
+
         textPanel.setPreferredSize(new Dimension(400, 300));
         add(textPanel, BorderLayout.CENTER);
     }
@@ -154,6 +155,7 @@ public class ChoicePanel extends JPanel implements TimerPanel.TimerListener {
                     public void run() {
                         drawingBoard.clear();
                         updateMessage("Choose something to draw");
+                        myTimerPanel.setVisible(false);
                     }
                 }, 3000);
             }
@@ -174,5 +176,9 @@ public class ChoicePanel extends JPanel implements TimerPanel.TimerListener {
         drawingBoard.clear();
         String message = "No more time! SCORE : 0";
         updateMessage(message);
+        if (myTimerPanel != null) {
+            myTimerPanel.setVisible(false);
+        }
     }
+
 }
